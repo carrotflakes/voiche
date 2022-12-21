@@ -26,7 +26,7 @@ fn main() {
     dbg!(power(&buf));
 
     // let buf = vc(&buf, process_nop);
-    let buf = process(&buf, -0.2, -0.4);
+    let buf = process(&buf, 20, -0.2, -0.4);
     dbg!(power(&buf));
 
     // let buf: Vec<_> = buf
@@ -48,7 +48,8 @@ fn main() {
     writer.finalize().unwrap();
 }
 
-fn process(buf: &[f32], formant: f32, pitch: f32) -> Vec<f32> {
+fn process(buf: &[f32], envelope_order: usize, formant: f32, pitch: f32) -> Vec<f32> {
+    assert!(0 < envelope_order && envelope_order < buf.len() / 2);
     let window_size = 1024;
     let slide_size = window_size / 4;
     let mut pitch_shifter = PitchChifter::new(window_size);
@@ -59,14 +60,13 @@ fn process(buf: &[f32], formant: f32, pitch: f32) -> Vec<f32> {
         |buf| {
             Fft::new(window_size).process(buf, |fft: &Fft, spectrum: &mut Vec<Complex32>| {
                 p += 0.001;
-                let envelope_order = 5;
                 let formant_expand_amount = 2.0f32.powf(formant);
                 let pitch_change_amount = 2.0f32.powf(pitch);
                 let len = spectrum.len();
 
                 // formant shift
                 let envelope = lift_spectrum(fft, spectrum, |b| {
-                    b[envelope_order..len - envelope_order - 1].fill(Complex32::zero());
+                    b[envelope_order..len - envelope_order + 1].fill(Complex32::zero());
                 });
                 let shifted_envelope = formant_shift(envelope, formant_expand_amount);
 
@@ -77,7 +77,7 @@ fn process(buf: &[f32], formant: f32, pitch: f32) -> Vec<f32> {
                 // extract fine structure
                 let mut fine_structure = lift_spectrum(fft, &shifted_spectrum, |b| {
                     b[..envelope_order].fill(Complex32::zero());
-                    b[len - envelope_order - 1..].fill(Complex32::zero());
+                    b[len - envelope_order + 1..].fill(Complex32::zero());
                 });
                 // remove aliasing
                 if pitch_change_amount < 1.0 {
