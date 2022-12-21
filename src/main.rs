@@ -52,7 +52,7 @@ fn process(buf: &[f32], envelope_order: usize, formant: f32, pitch: f32) -> Vec<
     assert!(0 < envelope_order && envelope_order < buf.len() / 2);
     let window_size = 1024;
     let slide_size = window_size / 4;
-    let mut pitch_shifter = PitchChifter::new(window_size);
+    let mut pitch_shifter = PitchShifter::new(window_size);
     let mut p = 0.0f32;
 
     vc(
@@ -126,12 +126,12 @@ fn formant_shift(envelope: Vec<f32>, formant_expand_amount: f32) -> Vec<f32> {
     new_envelope
 }
 
-pub struct PitchChifter {
+pub struct PitchShifter {
     prev_input_phases: Vec<f32>,
     prev_output_phases: Vec<f32>,
 }
 
-impl PitchChifter {
+impl PitchShifter {
     pub fn new(len: usize) -> Self {
         Self {
             prev_input_phases: vec![0.0; len],
