@@ -49,7 +49,7 @@ fn main() {
 }
 
 fn process(buf: &[f32], formant: f32, pitch: f32) -> Vec<f32> {
-    let window_size = 256;
+    let window_size = 1024;
     let slide_size = window_size / 4;
     let mut pitch_shifter = PitchChifter::new(window_size);
     let mut p = 0.0f32;

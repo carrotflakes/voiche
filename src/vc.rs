@@ -16,6 +16,7 @@ pub fn vc(
         .collect();
 
     let mut output = vec![0.0; buf.len()];
+    let output_scale = slide_size as f32 / window.iter().sum::<f32>();
 
     for i in 0..buf.len() / slide_size {
         let i = i * slide_size;
@@ -26,8 +27,7 @@ pub fn vc(
             .collect();
         b.resize(window_size, 0.0);
         let b = process(&b);
-        let scale = slide_size as f32 / window_size as f32;
-        let b: Vec<_> = b.into_iter().enumerate().map(|(i, x)| x * window[i] * scale).collect();
+        let b: Vec<_> = b.into_iter().enumerate().map(|(i, x)| x * window[i] * output_scale).collect();
         for (x, y) in output[i..].iter_mut().zip(b.iter()) {
             *x += y;
         }
