@@ -192,10 +192,6 @@ impl PitchChifter {
 }
 
 fn scale_cmp(buf: &mut [Complex32]) {
-    if buf.is_empty() {
-        return;
-    }
-
     let scale = 1.0 / buf.len() as f32;
     for x in buf.iter_mut() {
         *x *= scale;
@@ -207,11 +203,10 @@ fn lift_spectrum(
     spectrum: &[Complex32],
     mut process: impl FnMut(&mut Vec<Complex32>),
 ) -> Vec<f32> {
-    let envelope: Vec<_> = spectrum
+    let mut cepstrum: Vec<_> = spectrum
         .iter()
-        .map(|x| (x.norm() + std::f32::EPSILON).ln())
+        .map(|&x| Complex32::new((x.norm() + std::f32::EPSILON).ln(), 0.0))
         .collect();
-    let mut cepstrum: Vec<_> = envelope.iter().map(|&x| Complex32::new(x, 0.0)).collect();
 
     fft.inverse.process(&mut cepstrum);
 
