@@ -2,18 +2,19 @@ use std::f32::consts::{PI, TAU};
 
 use crate::{
     fft::{fix_scale, Fft},
-    transform::transform,
+    transform::{hann_window, transform},
 };
 use rustfft::{num_complex::Complex32, num_traits::Zero};
 
 pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]) -> Vec<f32> {
     assert!(0 < envelope_order && envelope_order < buf.len() / 2);
     let window_size = 1024;
+    let window = hann_window(window_size);
     let slide_size = window_size / 4;
     let mut pitch_shift = pitch_shifter(window_size);
     let mut p = 0.0f32;
 
-    transform(window_size, slide_size, buf, |buf| {
+    transform(slide_size, window, buf, |buf| {
         Fft::new(window_size).process(buf, |fft: &Fft, spectrum: &mut Vec<Complex32>| {
             p += 0.01;
             let formant_expand_amount = 2.0f32.powf(formant);
