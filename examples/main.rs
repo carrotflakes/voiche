@@ -2,10 +2,12 @@ use hound::{SampleFormat, WavSpec};
 use voice_changer::voice_change::{power, voice_change};
 
 fn main() {
-    let p = "karplus-strong.wav";
-    let p = "fes.wav";
-    let p = "nanachi.wav";
-    let mut reader = hound::WavReader::open(p).unwrap();
+    let file = std::env::args()
+        .skip(1)
+        .next()
+        .unwrap_or("epic.wav".to_string());
+
+    let mut reader = hound::WavReader::open(&file).unwrap();
     let spec = reader.spec();
     dbg!(&spec);
     let buf: Vec<_> = match &spec {
@@ -45,7 +47,7 @@ fn main() {
     dbg!(power(&buf));
 
     let mut writer = hound::WavWriter::create(
-        "output.wav",
+        file.replace(".", "_out."),
         hound::WavSpec {
             channels: 1,
             ..spec
