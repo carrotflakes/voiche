@@ -1,7 +1,7 @@
 use std::f32::consts::{PI, TAU};
 
 use crate::{
-    fft::{fix_scale, Fft},
+    fft::{fill_right_part_of_spectrum, fix_scale, Fft},
     transform::{hann_window, transform},
 };
 use rustfft::{num_complex::Complex32, num_traits::Zero};
@@ -11,18 +11,17 @@ pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]
     let window_size = 1024;
     let window = hann_window(window_size);
     let slide_size = window_size / 4;
+    let fft = Fft::new(window_size);
     let mut pitch_shift = pitch_shifter(window_size);
-    let mut p = 0.0f32;
 
     transform(slide_size, window, buf, |buf| {
-        Fft::new(window_size).process(buf, |fft: &Fft, spectrum: &mut Vec<Complex32>| {
-            p += 0.01;
+        fft.retouch_spectrum(buf, |spectrum| {
             let formant_expand_amount = 2.0f32.powf(formant);
-            let pitch_change_amount = 2.0f32.powf(pitch + p.sin() * 0.0);
+            let pitch_change_amount = 2.0f32.powf(pitch);
             let len = spectrum.len();
 
             // formant shift
-            let envelope = lift_spectrum(fft, spectrum, |b| {
+            let envelope = lift_spectrum(&fft, spectrum, |b| {
                 b[envelope_order..len - envelope_order + 1].fill(Complex32::zero());
             });
             let shifted_envelope = formant_shift(envelope, formant_expand_amount);
@@ -31,7 +30,7 @@ pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]
             let shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
 
             // extract fine structure
-            let mut fine_structure = lift_spectrum(fft, &shifted_spectrum, |b| {
+            let mut fine_structure = lift_spectrum(&fft, &shifted_spectrum, |b| {
                 b[..envelope_order].fill(Complex32::zero());
                 b[len - envelope_order + 1..].fill(Complex32::zero());
             });
@@ -44,9 +43,7 @@ pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]
                 spectrum[i] = Complex32::from_polar(amp, phase);
             }
 
-            for i in 1..len / 2 {
-                spectrum[len - i] = spectrum[i].conj();
-            }
+            fill_right_part_of_spectrum(spectrum);
         })
     })
 }
