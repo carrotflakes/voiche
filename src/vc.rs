@@ -27,7 +27,11 @@ pub fn vc(
             .collect();
         b.resize(window_size, 0.0);
         let b = process(&b);
-        let b: Vec<_> = b.into_iter().enumerate().map(|(i, x)| x * window[i] * output_scale).collect();
+        let b: Vec<_> = b
+            .into_iter()
+            .enumerate()
+            .map(|(i, x)| x * window[i] * output_scale)
+            .collect();
         for (x, y) in output[i..].iter_mut().zip(b.iter()) {
             *x += y;
         }
@@ -46,8 +50,8 @@ pub fn process_rev(buf: &[f32]) -> Vec<f32> {
 }
 
 pub struct Fft {
-    pub forward: Arc<dyn rustfft::Fft<f32>>,
-    pub inverse: Arc<dyn rustfft::Fft<f32>>,
+    forward: Arc<dyn rustfft::Fft<f32>>,
+    inverse: Arc<dyn rustfft::Fft<f32>>,
 }
 
 impl Fft {
@@ -65,11 +69,19 @@ impl Fft {
         mut process: impl FnMut(&Fft, &mut Vec<Complex32>),
     ) -> Vec<f32> {
         let mut buf: Vec<_> = buf.iter().map(|&x| Complex::new(x, 0.0)).collect();
-        self.forward.process(&mut buf);
+        self.forward(&mut buf);
         process(self, &mut buf);
-        self.inverse.process(&mut buf);
+        self.inverse(&mut buf);
         let scale = 1.0 / buf.len() as f32;
         buf.iter().map(|x| x.re * scale).collect()
+    }
+
+    pub fn forward(&self, buffer: &mut Vec<Complex32>) {
+        self.forward.process(buffer);
+    }
+
+    pub fn inverse(&self, buffer: &mut Vec<Complex32>) {
+        self.inverse.process(buffer);
     }
 }
 

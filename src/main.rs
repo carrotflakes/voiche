@@ -26,7 +26,9 @@ fn main() {
     dbg!(power(&buf));
 
     // let buf = vc(&buf, process_nop);
+    let start = std::time::Instant::now();
     let buf = process(&buf, 20, -0.2, -0.4);
+    dbg!(start.elapsed());
     dbg!(power(&buf));
 
     // let buf: Vec<_> = buf
@@ -208,12 +210,12 @@ fn lift_spectrum(
         .map(|&x| Complex32::new((x.norm() + std::f32::EPSILON).ln(), 0.0))
         .collect();
 
-    fft.inverse.process(&mut cepstrum);
+    fft.inverse(&mut cepstrum);
 
     process(&mut cepstrum);
 
     let mut envelope = cepstrum;
-    fft.forward.process(&mut envelope);
+    fft.forward(&mut envelope);
     scale_cmp(&mut envelope);
 
     envelope.into_iter().map(|x| x.re).collect()
