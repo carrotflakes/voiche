@@ -113,9 +113,9 @@ pub fn pitch_shifter(len: usize) -> impl FnMut(&[Complex32], f32, usize) -> Vec<
             shifted_spectrum[i] = Complex32::from_polar(post[i][0], phase);
             prev_output_phases[i] = phase;
         }
-        for i in 1..len / 2 {
-            shifted_spectrum[len - i] = shifted_spectrum[i].conj();
-        }
+
+        fill_right_part_of_spectrum(&mut shifted_spectrum);
+
         shifted_spectrum
     }
 }
