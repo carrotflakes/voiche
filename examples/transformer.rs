@@ -1,5 +1,5 @@
 use hound::{SampleFormat, WavSpec};
-use voice_changer::{
+use voiche::{
     transform::{hann_window, Transformer},
     voice_change::{self, power},
 };

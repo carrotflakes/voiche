@@ -1,5 +1,5 @@
 use hound::{SampleFormat, WavSpec};
-use voice_changer::voice_change::{power, voice_change};
+use voiche::voice_change::{power, voice_change};
 
 fn main() {
     let file = std::env::args()
