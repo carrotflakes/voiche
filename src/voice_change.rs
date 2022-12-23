@@ -11,10 +11,26 @@ pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]
     let window_size = 1024;
     let window = hann_window(window_size);
     let slide_size = window_size / 4;
+
+    transform(
+        slide_size,
+        window,
+        buf,
+        processor(window_size, slide_size, envelope_order, formant, pitch),
+    )
+}
+
+pub fn processor(
+    window_size: usize,
+    slide_size: usize,
+    envelope_order: usize,
+    formant: f32,
+    pitch: f32,
+) -> impl FnMut(&[f32]) -> Vec<f32> {
     let fft = Fft::new(window_size);
     let mut pitch_shift = pitch_shifter(window_size);
 
-    transform(slide_size, window, buf, |buf| {
+    move |buf| {
         fft.retouch_spectrum(buf, |spectrum| {
             let formant_expand_amount = 2.0f32.powf(formant);
             let pitch_change_amount = 2.0f32.powf(pitch);
@@ -45,7 +61,7 @@ pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]
 
             fill_right_part_of_spectrum(spectrum);
         })
-    })
+    }
 }
 
 pub fn formant_shift(envelope: Vec<f32>, formant_expand_amount: f32) -> Vec<f32> {
