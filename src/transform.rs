@@ -5,9 +5,14 @@ pub fn transform(
     mut process: impl FnMut(&[f32]) -> Vec<f32>,
 ) -> Vec<f32> {
     let mut output = vec![0.0; buf.len()];
+
+    if buf.is_empty() {
+        return output;
+    }
+
     let output_scale = slide_size as f32 / window.iter().sum::<f32>();
 
-    for i in 0..buf.len() / slide_size {
+    for i in 0..(buf.len() - 1) / slide_size + 1 {
         let i = i * slide_size;
         let mut b: Vec<_> = buf[i..]
             .iter()
