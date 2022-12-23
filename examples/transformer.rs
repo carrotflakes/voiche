@@ -50,7 +50,7 @@ fn main() {
     let mut transformer = Transformer::new(
         window,
         slide_size,
-        voice_change::processor(window_size, slide_size, 20, -0.2, -0.4),
+        voice_change::transform_processor(window_size, slide_size, 20, -0.2, -0.4),
     );
     transformer.input_slice(&buf);
     let mut buf = Vec::new();

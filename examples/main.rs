@@ -1,5 +1,8 @@
 use hound::{SampleFormat, WavSpec};
-use voiche::voice_change::{power, voice_change};
+use voiche::{
+    transform::{self, hann_window},
+    voice_change::{power, transform_processor},
+};
 
 fn main() {
     let file = std::env::args()
@@ -42,7 +45,16 @@ fn main() {
 
     // let buf = vc(&buf, process_nop);
     let start = std::time::Instant::now();
-    let buf = voice_change(20, -0.2, -0.4, &buf);
+    let window_size = 1024;
+    let window = hann_window(window_size);
+    let slide_size = window_size / 4;
+
+    let buf = transform::transform(
+        slide_size,
+        window,
+        &buf,
+        transform_processor(window_size, slide_size, 20, -0.2, -0.4),
+    );
     dbg!(start.elapsed());
     dbg!(power(&buf));
 

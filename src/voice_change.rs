@@ -1,26 +1,9 @@
 use std::f32::consts::{PI, TAU};
 
-use crate::{
-    fft::{fill_right_part_of_spectrum, fix_scale, Fft},
-    transform::{hann_window, transform},
-};
+use crate::fft::{fill_right_part_of_spectrum, fix_scale, Fft};
 use rustfft::{num_complex::Complex32, num_traits::Zero};
 
-pub fn voice_change(envelope_order: usize, formant: f32, pitch: f32, buf: &[f32]) -> Vec<f32> {
-    assert!(0 < envelope_order && envelope_order < buf.len() / 2);
-    let window_size = 1024;
-    let window = hann_window(window_size);
-    let slide_size = window_size / 4;
-
-    transform(
-        slide_size,
-        window,
-        buf,
-        processor(window_size, slide_size, envelope_order, formant, pitch),
-    )
-}
-
-pub fn processor(
+pub fn transform_processor(
     window_size: usize,
     slide_size: usize,
     envelope_order: usize,
@@ -32,36 +15,62 @@ pub fn processor(
 
     move |buf| {
         fft.retouch_spectrum(buf, |spectrum| {
-            let formant_expand_amount = 2.0f32.powf(formant);
-            let pitch_change_amount = 2.0f32.powf(pitch);
-            let len = spectrum.len();
-
-            // formant shift
-            let envelope = lift_spectrum(&fft, spectrum, |b| {
-                b[envelope_order..len - envelope_order + 1].fill(Complex32::zero());
-            });
-            let shifted_envelope = formant_shift(envelope, formant_expand_amount);
-
-            // pitch shift
-            let shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
-
-            // extract fine structure
-            let mut fine_structure = lift_spectrum(&fft, &shifted_spectrum, |b| {
-                b[..envelope_order].fill(Complex32::zero());
-                b[len - envelope_order + 1..].fill(Complex32::zero());
-            });
-
-            remove_aliasing(pitch_change_amount, &mut fine_structure);
-
-            for i in 0..len / 2 + 1 {
-                let amp = (shifted_envelope[i] + fine_structure[i]).exp();
-                let phase = shifted_spectrum[i].arg();
-                spectrum[i] = Complex32::from_polar(amp, phase);
-            }
-
-            fill_right_part_of_spectrum(spectrum);
+            process_spectrum(
+                slide_size,
+                &fft,
+                &mut pitch_shift,
+                envelope_order,
+                formant,
+                pitch,
+                spectrum,
+            );
         })
     }
+}
+
+pub fn process_spectrum(
+    slide_size: usize,
+    fft: &Fft,
+    pitch_shift: &mut impl FnMut(
+        &[rustfft::num_complex::Complex<f32>],
+        f32,
+        usize,
+    ) -> Vec<rustfft::num_complex::Complex<f32>>,
+    envelope_order: usize,
+    formant: f32,
+    pitch: f32,
+    spectrum: &mut [rustfft::num_complex::Complex<f32>],
+) {
+    assert!(0 < envelope_order && envelope_order < spectrum.len() / 2);
+
+    let formant_expand_amount = 2.0f32.powf(formant);
+    let pitch_change_amount = 2.0f32.powf(pitch);
+    let len = spectrum.len();
+
+    // formant shift
+    let envelope = lift_spectrum(&fft, spectrum, |b| {
+        b[envelope_order..len - envelope_order + 1].fill(Complex32::zero());
+    });
+    let shifted_envelope = formant_shift(envelope, formant_expand_amount);
+    
+    // pitch shift
+    let shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
+    
+    // extract fine structure
+    let mut fine_structure = lift_spectrum(&fft, &shifted_spectrum, |b| {
+        b[..envelope_order].fill(Complex32::zero());
+        b[len - envelope_order + 1..].fill(Complex32::zero());
+    });
+    
+    remove_aliasing(pitch_change_amount, &mut fine_structure);
+    
+    for i in 0..len / 2 + 1 {
+        let amp = (shifted_envelope[i] + fine_structure[i]).exp();
+        let phase = shifted_spectrum[i].arg();
+        spectrum[i] = Complex32::from_polar(amp, phase);
+    }
+    
+    fill_right_part_of_spectrum(spectrum);
 }
 
 pub fn formant_shift(envelope: Vec<f32>, formant_expand_amount: f32) -> Vec<f32> {
