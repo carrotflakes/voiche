@@ -1,8 +1,7 @@
 use hound::{SampleFormat, WavSpec};
 use voiche::{
-    power,
-    transform::{hann_window, Transformer},
-    voice_change,
+    pitch_shift, power,
+    transform::{self, hann_window},
 };
 
 fn main() {
@@ -44,19 +43,18 @@ fn main() {
     };
     dbg!(power(&buf));
 
+    // let buf = vc(&buf, process_nop);
     let start = std::time::Instant::now();
     let window_size = 1024;
-    let slide_size = window_size / 4;
     let window = hann_window(window_size);
-    let mut transformer = Transformer::new(
-        window,
-        slide_size,
-        voice_change::transform_processor(window_size, slide_size, 20, -0.2, -0.4),
-    );
-    transformer.input_slice(&buf);
-    let mut buf = Vec::new();
-    transformer.finish(&mut buf);
+    let slide_size = window_size / 4;
 
+    let buf = transform::transform(
+        slide_size,
+        window,
+        &buf,
+        pitch_shift::transform_processor(window_size, slide_size, -0.4),
+    );
     dbg!(start.elapsed());
     dbg!(power(&buf));
 

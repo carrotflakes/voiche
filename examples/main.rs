@@ -1,7 +1,8 @@
 use hound::{SampleFormat, WavSpec};
 use voiche::{
+    power,
     transform::{self, hann_window},
-    voice_change::{power, transform_processor},
+    voice_change::transform_processor,
 };
 
 fn main() {
