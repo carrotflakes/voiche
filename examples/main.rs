@@ -1,9 +1,7 @@
 mod wav;
 
 use voiche::{
-    power,
-    transform::{self, hann_window},
-    voice_change::transform_processor,
+    power, transform::transform, voice_change::transform_processor, windows::hann_window,
 };
 
 fn main() {
@@ -20,7 +18,7 @@ fn main() {
     let window = hann_window(window_size);
     let slide_size = window_size / 4;
 
-    let buf = transform::transform(
+    let buf = transform(
         slide_size,
         window,
         &buf,

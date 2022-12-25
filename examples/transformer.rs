@@ -1,10 +1,6 @@
 mod wav;
 
-use voiche::{
-    power,
-    transform::{hann_window, Transformer},
-    voice_change,
-};
+use voiche::{power, transform::Transformer, voice_change, windows::hann_window};
 
 fn main() {
     let file = std::env::args()

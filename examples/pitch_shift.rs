@@ -1,9 +1,6 @@
 mod wav;
 
-use voiche::{
-    pitch_shift, power,
-    transform::{self, hann_window},
-};
+use voiche::{pitch_shift, power, transform::transform, windows::hann_window};
 
 fn main() {
     let file = std::env::args()
@@ -20,7 +17,7 @@ fn main() {
     let window = hann_window(window_size);
     let slide_size = window_size / 4;
 
-    let buf = transform::transform(
+    let buf = transform(
         slide_size,
         window,
         &buf,

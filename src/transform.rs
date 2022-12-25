@@ -37,15 +37,6 @@ pub fn transform<T: num_traits::Float + Copy + Sum>(
     output
 }
 
-pub fn hann_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
-    (0..size)
-        .map(|i| {
-            T::from(0.5).unwrap()
-                * (T::one() - (T::from(i).unwrap() * T::TAU() / T::from(size).unwrap()).cos())
-        })
-        .collect()
-}
-
 pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> {
     window: Vec<T>,
     slide_size: usize,
