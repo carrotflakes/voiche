@@ -76,5 +76,9 @@ pub fn save(p: impl AsRef<Path>, spec: WavSpec, buf: Vec<f32>) {
     writer.finalize().unwrap();
 }
 
+pub fn power<T: voiche::float::Float + std::iter::Sum>(buf: &[T]) -> T {
+    (buf.iter().map(|&x| x.powi(2)).sum::<T>() / T::from(buf.len()).unwrap()).sqrt()
+}
+
 #[allow(dead_code)]
 fn main() {}

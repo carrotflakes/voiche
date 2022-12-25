@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{power, transform::Transformer, voice_change, windows::hann_window};
+use voiche::{transform::Transformer, voice_change, windows::hann_window};
 
 fn main() {
     let file = std::env::args()
@@ -9,7 +9,7 @@ fn main() {
         .unwrap_or("epic.wav".to_string());
 
     let (spec, buf) = wav::load(&file);
-    dbg!(power(&buf));
+    dbg!(wav::power(&buf));
 
     let start = std::time::Instant::now();
     let window_size = 1024;
@@ -25,7 +25,7 @@ fn main() {
     transformer.finish(&mut buf);
 
     dbg!(start.elapsed());
-    dbg!(power(&buf));
+    dbg!(wav::power(&buf));
 
     wav::save(file.replace(".", "_out."), spec, buf);
 }
