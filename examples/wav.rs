@@ -2,73 +2,67 @@ use std::path::Path;
 
 use hound::{SampleFormat, WavSpec};
 
-pub fn load(p: impl AsRef<Path>) -> (WavSpec, Vec<f32>) {
+pub fn load(p: impl AsRef<Path>) -> (WavSpec, Vec<Vec<f32>>) {
     let mut reader = hound::WavReader::open(&p).unwrap();
     let spec = reader.spec();
     dbg!(&spec);
-    let buf: Vec<_> = match &spec {
-        WavSpec {
-            channels: 2,
-            bits_per_sample: 32,
-            sample_format: SampleFormat::Float,
-            ..
-        } => reader
-            .samples::<f32>()
-            .map(|x| x.unwrap())
-            .enumerate()
-            .filter_map(|(i, x)| (i % 2 == 0).then_some(x))
-            .collect(),
-        WavSpec {
-            channels: 2,
-            bits_per_sample: 16,
-            sample_format: SampleFormat::Int,
-            ..
-        } => {
-            let buf: Vec<_> = reader
-                .samples::<i16>()
-                .map(|x| x.unwrap())
-                .enumerate()
-                .filter_map(|(i, x)| (i % 2 == 0).then_some(x))
-                .collect();
-            buf.iter().map(|&x| x as f32 / i16::MAX as f32).collect()
-        }
-        _ => panic!("unexpected wav format"),
-    };
-    (spec, buf)
-}
-
-pub fn save(p: impl AsRef<Path>, spec: WavSpec, buf: Vec<f32>) {
-    let mut writer = hound::WavWriter::create(
-        p,
-        hound::WavSpec {
-            channels: 1,
-            ..spec
-        },
-    )
-    .unwrap();
+    let mut bufs: Vec<_> = (0..spec.channels).map(|_| vec![]).collect();
     match &spec {
         WavSpec {
-            channels: 2,
             bits_per_sample: 32,
             sample_format: SampleFormat::Float,
             ..
         } => {
-            for &x in buf.iter() {
-                writer.write_sample(x).unwrap();
+            for (i, x) in reader.samples::<f32>().map(|x| x.unwrap()).enumerate() {
+                bufs[i % spec.channels as usize].push(x);
             }
         }
         WavSpec {
-            channels: 2,
             bits_per_sample: 16,
             sample_format: SampleFormat::Int,
             ..
         } => {
-            for &x in buf.iter() {
-                writer
-                    .write_sample(
-                        (x * i16::MAX as f32).clamp(i16::MIN as f32, i16::MAX as f32) as i16,
-                    )
-                    .unwrap()
+            for (i, x) in reader
+                .samples::<i16>()
+                .map(|x| x.unwrap() as f32 / i16::MAX as f32)
+                .enumerate()
+            {
+                bufs[i % spec.channels as usize].push(x);
+            }
+        }
+        _ => panic!("unexpected wav format"),
+    }
+    (spec, bufs)
+}
+
+pub fn save(p: impl AsRef<Path>, spec: WavSpec, bufs: Vec<Vec<f32>>) {
+    let mut writer = hound::WavWriter::create(p, spec).unwrap();
+    match &spec {
+        WavSpec {
+            bits_per_sample: 32,
+            sample_format: SampleFormat::Float,
+            ..
+        } => {
+            for i in 0..bufs[0].len() {
+                for c in 0..spec.channels as usize {
+                    writer.write_sample(bufs[c][i]).unwrap();
+                }
+            }
+        }
+        WavSpec {
+            bits_per_sample: 16,
+            sample_format: SampleFormat::Int,
+            ..
+        } => {
+            for i in 0..bufs[0].len() {
+                for c in 0..spec.channels as usize {
+                    writer
+                        .write_sample(
+                            (bufs[c][i] * i16::MAX as f32).clamp(i16::MIN as f32, i16::MAX as f32)
+                                as i16,
+                        )
+                        .unwrap()
+                }
             }
         }
         _ => panic!("unexpected wav format"),

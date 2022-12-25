@@ -8,22 +8,28 @@ fn main() {
         .next()
         .unwrap_or("epic.wav".to_string());
 
-    let (spec, buf) = wav::load(&file);
-    dbg!(wav::power(&buf));
+    let (spec, bufs) = wav::load(&file);
+    dbg!(wav::power(&bufs[0]));
 
     let start = std::time::Instant::now();
     let window_size = 1024;
     let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
 
-    let buf = transform(
-        slide_size,
-        window,
-        transform_processor(window_size, slide_size, 20, -0.2, -0.4),
-        &buf,
-    );
-    dbg!(start.elapsed());
-    dbg!(wav::power(&buf));
+    let bufs: Vec<_> = bufs
+        .iter()
+        .map(|buf| {
+            transform(
+                slide_size,
+                window.clone(),
+                transform_processor(window_size, slide_size, 20, -0.2, -0.4),
+                buf,
+            )
+        })
+        .collect();
 
-    wav::save(file.replace(".", "_out."), spec, buf);
+    dbg!(start.elapsed());
+    dbg!(wav::power(&bufs[0]));
+
+    wav::save(file.replace(".", "_out."), spec, bufs);
 }
