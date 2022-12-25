@@ -5,8 +5,8 @@ use rustfft::num_traits;
 pub fn transform<T: num_traits::Float + Copy + Sum>(
     slide_size: usize,
     window: Vec<T>,
-    buf: &[T],
     mut process: impl FnMut(&[T]) -> Vec<T>,
+    buf: &[T],
 ) -> Vec<T> {
     let mut output = vec![T::zero(); buf.len()];
 

@@ -21,8 +21,8 @@ fn main() {
     let buf = transform(
         slide_size,
         window,
-        &buf,
         transform_processor(window_size, slide_size, 20, -0.2, -0.4),
+        &buf,
     );
     dbg!(start.elapsed());
     dbg!(power(&buf));

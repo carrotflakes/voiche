@@ -20,8 +20,8 @@ fn main() {
     let buf = transform(
         slide_size,
         window,
-        &buf,
         pitch_shift::transform_processor(window_size, slide_size, -0.4),
+        &buf,
     );
     dbg!(start.elapsed());
     dbg!(power(&buf));
