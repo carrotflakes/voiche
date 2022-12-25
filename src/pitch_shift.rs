@@ -32,15 +32,12 @@ pub fn process_spectrum<T: Float>(
     spectrum: &mut [Complex<T>],
 ) {
     let pitch_change_amount = T::from_i32(2).unwrap().powf(pitch);
-    let len = spectrum.len();
 
     let mut shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
 
     remove_aliasing(pitch_change_amount, &mut shifted_spectrum);
 
-    spectrum[..len / 2 + 1].copy_from_slice(&shifted_spectrum[..len / 2 + 1]);
-
-    fill_right_part_of_spectrum(spectrum);
+    spectrum.copy_from_slice(&shifted_spectrum);
 }
 
 pub fn pitch_shifter<T: Float>(
@@ -52,7 +49,7 @@ pub fn pitch_shifter<T: Float>(
     move |spectrum, pitch_change_amount, slide_size| {
         let len = spectrum.len();
 
-        let mut pre = vec![[T::zero(); 2]; len];
+        let mut pre = vec![[T::zero(); 2]; len / 2 + 1];
         for i in 0..len / 2 + 1 {
             let (norm, phase) = spectrum[i].to_polar();
             let bin_center_freq = T::from(TAU * i as f64 / len as f64).unwrap();
@@ -67,7 +64,7 @@ pub fn pitch_shifter<T: Float>(
             pre[i] = [norm, T::from(i).unwrap() + bin_deviation];
         }
 
-        let mut post = vec![[T::zero(); 2]; len];
+        let mut post = vec![[T::zero(); 2]; len / 2 + 1];
         for i in 0..len / 2 + 1 {
             let shifted_bin = (T::from(i).unwrap() / pitch_change_amount)
                 .round()
