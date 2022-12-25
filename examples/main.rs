@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{transform::transform, voice_change::transform_processor, windows::hann_window};
+use voiche::{transform::transform, voice_change::transform_processor, windows};
 
 fn main() {
     let file = std::env::args()
@@ -13,7 +13,7 @@ fn main() {
 
     let start = std::time::Instant::now();
     let window_size = 1024;
-    let window = hann_window(window_size);
+    let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
 
     let buf = transform(
