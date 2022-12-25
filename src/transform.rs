@@ -1,71 +1,68 @@
-pub fn transform(
+use std::iter::Sum;
+
+use rustfft::num_traits;
+
+pub fn transform<T: num_traits::Float + Copy + Sum>(
     slide_size: usize,
-    window: Vec<f32>,
-    buf: &[f32],
-    mut process: impl FnMut(&[f32]) -> Vec<f32>,
-) -> Vec<f32> {
-    let mut output = vec![0.0; buf.len()];
+    window: Vec<T>,
+    buf: &[T],
+    mut process: impl FnMut(&[T]) -> Vec<T>,
+) -> Vec<T> {
+    let mut output = vec![T::zero(); buf.len()];
 
     if buf.is_empty() {
         return output;
     }
 
-    let output_scale = slide_size as f32 / window.iter().sum::<f32>();
+    let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
     for i in 0..(buf.len() - 1) / slide_size + 1 {
         let i = i * slide_size;
         let mut b: Vec<_> = buf[i..]
             .iter()
             .zip(window.iter())
-            .map(|(x, y)| x * y)
+            .map(|(&x, &y)| x * y)
             .collect();
-        b.resize(window.len(), 0.0);
+        b.resize(window.len(), T::zero());
         let b = process(&b);
         let b: Vec<_> = b
             .into_iter()
             .enumerate()
             .map(|(i, x)| x * window[i] * output_scale)
             .collect();
-        for (x, y) in output[i..].iter_mut().zip(b.iter()) {
-            *x += y;
+        for (x, &y) in output[i..].iter_mut().zip(b.iter()) {
+            *x = *x + y;
         }
     }
     output
 }
 
-pub fn process_nop(buf: &[f32]) -> Vec<f32> {
-    buf.to_vec()
-}
-
-pub fn process_rev(buf: &[f32]) -> Vec<f32> {
-    let mut buf = buf.to_vec();
-    buf.reverse();
-    buf
-}
-
-pub fn hann_window(size: usize) -> Vec<f32> {
+pub fn hann_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
     (0..size)
-        .map(|i| 0.5 * (1.0 - (i as f32 * std::f32::consts::TAU / size as f32).cos()))
+        .map(|i| {
+            T::from(0.5).unwrap()
+                * (T::one() - (T::from(i).unwrap() * T::TAU() / T::from(size).unwrap()).cos())
+        })
         .collect()
 }
 
-pub struct Transformer<T: FnMut(&[f32]) -> Vec<f32>> {
-    window: Vec<f32>,
+pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> {
+    window: Vec<T>,
     slide_size: usize,
-    input_buffer: Vec<f32>,
-    output_buffer: Vec<f32>,
-    process_fn: T,
+    input_buffer: Vec<T>,
+    output_buffer: Vec<T>,
+    process_fn: F,
 }
 
-impl<T: FnMut(&[f32]) -> Vec<f32>> Transformer<T> {
-    pub fn new(window: Vec<f32>, slide_size: usize, process_fn: T) -> Self {
+impl<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> Transformer<T, F> {
+    pub fn new(window: Vec<T>, slide_size: usize, process_fn: F) -> Self {
         assert!(window.len() >= slide_size);
         let overlap_size = window.len() - slide_size;
         Transformer {
             window,
             slide_size,
-            input_buffer: vec![0.0; overlap_size],
-            output_buffer: vec![0.0; overlap_size],
+            input_buffer: vec![T::zero(); overlap_size],
+            output_buffer: vec![T::zero(); overlap_size],
             process_fn,
         }
     }
@@ -74,11 +71,11 @@ impl<T: FnMut(&[f32]) -> Vec<f32>> Transformer<T> {
         self.window.len() - self.slide_size
     }
 
-    pub fn input_slice(&mut self, slice: &[f32]) {
+    pub fn input_slice(&mut self, slice: &[T]) {
         self.input_buffer.extend(slice.iter().copied());
     }
 
-    pub fn output_slice_exact(&mut self, slice: &mut [f32]) -> bool {
+    pub fn output_slice_exact(&mut self, slice: &mut [T]) -> bool {
         let overlap_size = self.overlap_size();
         if self.output_buffer.len() >= slice.len() + overlap_size * 2 {
             slice.copy_from_slice(&self.output_buffer[overlap_size..][..slice.len()]);
@@ -89,10 +86,10 @@ impl<T: FnMut(&[f32]) -> Vec<f32>> Transformer<T> {
         }
     }
 
-    pub fn finish(mut self, vec: &mut Vec<f32>) {
+    pub fn finish(mut self, vec: &mut Vec<T>) {
         let last_output_size =
             self.input_buffer.len() + self.output_buffer.len() - self.overlap_size() * 2;
-        self.input_buffer.extend(vec![0.0; self.slide_size]);
+        self.input_buffer.extend(vec![T::zero(); self.slide_size]);
         self.process();
         vec.extend_from_slice(&self.output_buffer[self.overlap_size()..][..last_output_size]);
     }
@@ -108,13 +105,13 @@ impl<T: FnMut(&[f32]) -> Vec<f32>> Transformer<T> {
         } = self;
         let window_size = window.len();
         let slide_size = *slide_size;
-        let output_scale = slide_size as f32 / window.iter().sum::<f32>();
+        let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
         while input_buffer.len() >= window_size {
             let b: Vec<_> = input_buffer[..window_size]
                 .iter()
                 .zip(window.iter())
-                .map(|(x, y)| x * y)
+                .map(|(&x, &y)| x * y)
                 .collect();
 
             let b = process_fn(&b);
@@ -123,10 +120,10 @@ impl<T: FnMut(&[f32]) -> Vec<f32>> Transformer<T> {
             let mut iter = b
                 .into_iter()
                 .zip(window.iter())
-                .map(|(x, y)| x * y * output_scale);
+                .map(|(x, &y)| x * y * output_scale);
             let output_buffer_len = output_buffer.len();
             for x in output_buffer[output_buffer_len - overlap_size..].iter_mut() {
-                *x += iter.next().unwrap();
+                *x = *x + iter.next().unwrap();
             }
             output_buffer.extend(iter);
 
