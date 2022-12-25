@@ -111,19 +111,15 @@ pub fn wrap_phase<T: Float>(phase: T) -> T {
 
 pub fn remove_aliasing<T: Num + Zero + One + Copy, S: Float>(
     pitch_change_amount: S,
-    fine_structure: &mut [T],
+    buffer: &mut [T],
 ) {
-    let len = fine_structure.len();
+    let len = buffer.len();
 
     if pitch_change_amount < S::one() {
         let nyquist = (S::from(len as f64 / 2.0).unwrap() * pitch_change_amount)
             .round()
             .to_usize()
             .unwrap();
-        fine_structure[nyquist..len / 2].fill(T::zero());
-
-        for i in 1..len / 2 {
-            fine_structure[len - i] = fine_structure[i];
-        }
+        buffer[nyquist..len - nyquist + 1].fill(T::zero());
     }
 }
