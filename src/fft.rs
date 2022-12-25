@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use rustfft::num_complex::Complex32;
+use rustfft::{num_complex::Complex, FftNum};
 
-pub struct Fft {
-    forward: Arc<dyn rustfft::Fft<f32>>,
-    inverse: Arc<dyn rustfft::Fft<f32>>,
+pub struct Fft<T: FftNum> {
+    forward: Arc<dyn rustfft::Fft<T>>,
+    inverse: Arc<dyn rustfft::Fft<T>>,
 }
 
-impl Fft {
+impl<T: FftNum> Fft<T> {
     pub fn new(size: usize) -> Self {
         let mut planner = rustfft::FftPlanner::new();
         Self {
@@ -18,10 +18,10 @@ impl Fft {
 
     pub fn retouch_spectrum(
         &self,
-        buf: &[f32],
-        mut process: impl FnMut(&mut [Complex32]),
-    ) -> Vec<f32> {
-        let mut buf: Vec<_> = buf.iter().map(|&x| Complex32::new(x, 0.0)).collect();
+        buf: &[T],
+        mut process: impl FnMut(&mut [Complex<T>]),
+    ) -> Vec<T> {
+        let mut buf: Vec<_> = buf.iter().map(|&x| Complex::new(x, T::zero())).collect();
         self.forward(&mut buf);
         process(&mut buf);
         self.inverse(&mut buf);
@@ -29,23 +29,23 @@ impl Fft {
         buf.iter().map(|x| x.re).collect()
     }
 
-    pub fn forward(&self, buffer: &mut Vec<Complex32>) {
+    pub fn forward(&self, buffer: &mut Vec<Complex<T>>) {
         self.forward.process(buffer);
     }
 
-    pub fn inverse(&self, buffer: &mut Vec<Complex32>) {
+    pub fn inverse(&self, buffer: &mut Vec<Complex<T>>) {
         self.inverse.process(buffer);
     }
 }
 
-pub fn fix_scale(buf: &mut [Complex32]) {
-    let scale = 1.0 / buf.len() as f32;
+pub fn fix_scale<T: FftNum>(buf: &mut [Complex<T>]) {
+    let scale = T::one() / T::from_usize(buf.len()).unwrap();
     for x in buf.iter_mut() {
-        *x *= scale;
+        *x = *x * scale;
     }
 }
 
-pub fn fill_right_part_of_spectrum(spectrum: &mut [Complex32]) {
+pub fn fill_right_part_of_spectrum<T: FftNum>(spectrum: &mut [Complex<T>]) {
     let len = spectrum.len();
 
     for i in 1..len / 2 {
