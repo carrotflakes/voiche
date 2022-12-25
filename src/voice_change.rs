@@ -88,7 +88,7 @@ pub fn formant_shift<T: Float>(envelope: Vec<T>, formant_expand_amount: T) -> Ve
         let x = j_f32 - T::from(j).unwrap();
         new_envelope[i] = (T::one() - x) * l + x * r;
     }
-    for i in 1..len / 2 + 1 {
+    for i in 1..len / 2 {
         new_envelope[len - i] = new_envelope[i];
     }
     new_envelope
