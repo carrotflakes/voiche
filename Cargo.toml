@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 rustfft = "6.1.0"
+
+[dev-dependencies]
 hound = "3.5.0"
