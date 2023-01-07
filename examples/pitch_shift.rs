@@ -28,5 +28,5 @@ fn main() {
     dbg!(start.elapsed());
     dbg!(wav::power(&bufs[0]));
 
-    wav::save(file.replace(".", "_out."), spec, bufs);
+    wav::save(file.replace(".", "_ps."), spec, bufs);
 }
