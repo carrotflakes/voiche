@@ -19,12 +19,14 @@ fn main() {
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
-    transform(
-        slide_size,
-        window.clone(),
-        pitch_shift::transform_processor(window_size, slide_size, -0.4),
-        &buf,
-    )}).collect();
+            transform(
+                slide_size,
+                window.clone(),
+                pitch_shift::transform_processor(window_size, slide_size, -0.4),
+                &buf,
+            )
+        })
+        .collect();
     dbg!(start.elapsed());
     dbg!(wav::power(&bufs[0]));
 

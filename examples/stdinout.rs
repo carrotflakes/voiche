@@ -1,3 +1,5 @@
+// Voice change from mic to speaker
+// Usage:
 // parec -r --raw --format=s16ne --channels=1 | cargo run --release --example stdinout 2> /dev/null | pacat --raw --format=s16ne --channels=1
 
 use std::{

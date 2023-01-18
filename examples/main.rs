@@ -15,6 +15,9 @@ fn main() {
     let window_size = 1024;
     let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
+    let envelope_order = 20;
+    let formant = -0.2;
+    let pitch = -0.4;
 
     let bufs: Vec<_> = bufs
         .iter()
@@ -22,7 +25,7 @@ fn main() {
             transform(
                 slide_size,
                 window.clone(),
-                transform_processor(window_size, slide_size, 20, -0.2, -0.4),
+                transform_processor(window_size, slide_size, envelope_order, formant, pitch),
                 buf,
             )
         })
