@@ -24,31 +24,33 @@ fn main() {
     let transformer = Transformer::new(window, slide_size, fft);
     let bufs: Vec<_> = bufs
         .iter()
-        .map(|buf| {
-            let norms = transformer.forward_norm(buf);
-
-            let mut angles: Vec<Vec<_>> = norms
-                .iter()
-                .map(|x| {
-                    x.iter()
-                        .map(|x| (x * 543.0 + 12.0) % std::f32::consts::TAU)
-                        .collect()
-                })
-                .collect();
-
-            for _ in 0..32 {
-                let buf = transformer.inverse(buf.len(), &norms, &angles);
-                angles = transformer.forward_angle(&buf);
-            }
-
-            transformer.inverse(buf.len(), &norms, &angles)
-        })
+        .map(|buf| griffin_lim(&transformer, buf))
         .collect();
 
     dbg!(start.elapsed());
     dbg!(wav::power(&bufs[0]));
 
     wav::save(file.replace(".", "_gl."), spec, bufs);
+}
+
+fn griffin_lim(transformer: &Transformer, buf: &Vec<f32>) -> Vec<f32> {
+    let norms = transformer.forward_norm(buf);
+
+    let mut angles: Vec<Vec<_>> = norms
+        .iter()
+        .map(|x| {
+            x.iter()
+                .map(|x| (x * 543.0 + 12.0) % std::f32::consts::TAU)
+                .collect()
+        })
+        .collect();
+
+    for _ in 0..32 {
+        let buf = transformer.inverse(buf.len(), &norms, &angles);
+        angles = transformer.forward_angle(&buf);
+    }
+
+    transformer.inverse(buf.len(), &norms, &angles)
 }
 
 pub struct Transformer {
