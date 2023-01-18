@@ -14,7 +14,7 @@ pub fn transform_processor<T: Float>(
     window_size: usize,
     slide_size: usize,
     pitch: T,
-) -> impl FnMut(&[T]) -> Vec<T> {
+) -> impl FnMut(&mut [T]) {
     let fft = Fft::new(window_size);
     let mut pitch_shift = pitch_shifter(window_size);
 

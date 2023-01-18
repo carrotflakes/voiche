@@ -11,7 +11,7 @@ pub fn transform_processor<T: Float>(
     envelope_order: usize,
     formant: T,
     pitch: T,
-) -> impl FnMut(&[T]) -> Vec<T> {
+) -> impl FnMut(&mut [T]) {
     let fft = Fft::new(window_size);
     let mut pitch_shift = pitch_shifter(window_size);
 
@@ -26,7 +26,7 @@ pub fn transform_processor<T: Float>(
                 pitch,
                 spectrum,
             );
-        })
+        });
     }
 }
 

@@ -16,17 +16,13 @@ impl<T: FftNum> Fft<T> {
         }
     }
 
-    pub fn retouch_spectrum(
-        &self,
-        buf: &[T],
-        mut process: impl FnMut(&mut [Complex<T>]),
-    ) -> Vec<T> {
-        let mut buf: Vec<_> = buf.iter().map(|&x| Complex::new(x, T::zero())).collect();
-        self.forward(&mut buf);
-        process(&mut buf);
-        self.inverse(&mut buf);
-        fix_scale(&mut buf);
-        buf.iter().map(|x| x.re).collect()
+    pub fn retouch_spectrum(&self, buf: &mut [T], mut process: impl FnMut(&mut [Complex<T>])) {
+        let mut spec: Vec<_> = buf.iter().map(|&x| Complex::new(x, T::zero())).collect();
+        self.forward(&mut spec);
+        process(&mut spec);
+        self.inverse(&mut spec);
+        fix_scale(&mut spec);
+        buf.copy_from_slice(&spec.iter().map(|x| x.re).collect::<Vec<_>>());
     }
 
     pub fn forward(&self, buffer: &mut Vec<Complex<T>>) {

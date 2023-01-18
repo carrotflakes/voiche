@@ -4,3 +4,5 @@ pub mod pitch_shift;
 pub mod transform;
 pub mod voice_change;
 pub mod windows;
+
+pub use rustfft;

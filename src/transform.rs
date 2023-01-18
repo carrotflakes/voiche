@@ -5,7 +5,7 @@ use rustfft::num_traits;
 pub fn transform<T: num_traits::Float + Copy + Sum>(
     slide_size: usize,
     window: Vec<T>,
-    mut process: impl FnMut(&[T]) -> Vec<T>,
+    mut process: impl FnMut(&mut [T]),
     buf: &[T],
 ) -> Vec<T> {
     let mut output = vec![T::zero(); buf.len()];
@@ -24,7 +24,7 @@ pub fn transform<T: num_traits::Float + Copy + Sum>(
             .map(|(&x, &y)| x * y)
             .collect();
         b.resize(window.len(), T::zero());
-        let b = process(&b);
+        process(&mut b);
         let b: Vec<_> = b
             .into_iter()
             .enumerate()
@@ -37,7 +37,7 @@ pub fn transform<T: num_traits::Float + Copy + Sum>(
     output
 }
 
-pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> {
+pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&mut [T])> {
     window: Vec<T>,
     slide_size: usize,
     input_buffer: Vec<T>,
@@ -45,7 +45,7 @@ pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<
     process_fn: F,
 }
 
-impl<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> Transformer<T, F> {
+impl<T: num_traits::Float + Copy + Sum, F: FnMut(&mut [T])> Transformer<T, F> {
     pub fn new(window: Vec<T>, slide_size: usize, process_fn: F) -> Self {
         assert!(window.len() >= slide_size);
         let overlap_size = window.len() - slide_size;
@@ -99,13 +99,13 @@ impl<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> Transformer<T,
         let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
         while input_buffer.len() >= window_size {
-            let b: Vec<_> = input_buffer[..window_size]
+            let mut b: Vec<_> = input_buffer[..window_size]
                 .iter()
                 .zip(window.iter())
                 .map(|(&x, &y)| x * y)
                 .collect();
 
-            let b = process_fn(&b);
+            process_fn(&mut b);
             debug_assert_eq!(window_size, b.len());
 
             let mut iter = b
@@ -125,7 +125,7 @@ impl<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> Transformer<T,
 
 #[test]
 fn test() {
-    let mut transform = Transformer::new(vec![1.0; 5], 3, |x| x.to_vec());
+    let mut transform = Transformer::new(vec![1.0; 5], 3, |_| {});
     let mut output = vec![0.0; 8];
     let mut all_output = vec![];
 
@@ -159,7 +159,7 @@ fn test() {
 
 #[test]
 fn test2() {
-    let mut transform = Transformer::new(vec![1.0; 8], 4, |x| x.to_vec());
+    let mut transform = Transformer::new(vec![1.0; 8], 4, |_| {});
     let input: Vec<_> = (0..123).map(|x| (x as f32) % 16.0).collect();
     let mut all_output = vec![];
 
