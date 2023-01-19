@@ -1,0 +1,114 @@
+mod wav;
+
+use rustfft::num_complex::Complex;
+use voiche::{
+    fft::{fix_scale, Fft},
+    transform,
+    windows::hann_window,
+};
+
+fn main() {
+    let file = std::env::args()
+        .skip(1)
+        .next()
+        .unwrap_or("epic.wav".to_string());
+
+    let (spec, bufs) = wav::load(&file);
+    dbg!(wav::power(&bufs[0]));
+
+    let start = std::time::Instant::now();
+    let window_size = 1024;
+    let slide_size = window_size / 4;
+    let window = hann_window(window_size);
+
+    let bufs: Vec<_> = bufs
+        .iter()
+        .map(|buf| {
+            let mut transformer = transform::Transformer::new(
+                window.clone(),
+                slide_size,
+                dynamic_griffin_lim(window.clone(), slide_size, 8),
+            );
+            transformer.input_slice(&buf);
+            let mut buf = Vec::new();
+            transformer.finish(&mut buf);
+            buf
+        })
+        .collect();
+
+    dbg!(start.elapsed());
+    dbg!(wav::power(&bufs[0]));
+
+    wav::save(file.replace(".", "_dgl."), spec, bufs);
+}
+
+fn dynamic_griffin_lim(
+    window: Vec<f32>,
+    slide_size: usize,
+    iterate: usize,
+) -> impl FnMut(&mut [f32]) {
+    let fft = Fft::new(window.len());
+    let mut specs = vec![vec![[0.0, 0.0]; window.len()]];
+
+    move |buf: &mut [f32]| {
+        // Get spectrum from input
+        let mut spec = buf
+            .iter()
+            .zip(window.iter())
+            .map(|(x, y)| Complex::new(x * y, 0.0))
+            .collect();
+        fft.forward(&mut spec);
+        specs.push(spec.iter().map(|x| [x.norm(), 0.0]).collect());
+
+        for _ in 0..iterate {
+            // Reconstruct waveform from spectrogram
+            let waveform = reconstruct(&window, slide_size, &fft, &specs);
+
+            // Update phases
+            waveform
+                .windows(window.len())
+                .step_by(slide_size)
+                .zip(specs.iter_mut())
+                .for_each(|(b, p)| {
+                    let mut spec = b
+                        .iter()
+                        .zip(window.iter())
+                        .map(|(x, y)| Complex::new(x * y, 0.0))
+                        .collect();
+                    fft.forward(&mut spec);
+                    for i in 0..spec.len() {
+                        p[i][1] = spec[i].arg();
+                    }
+                });
+        }
+
+        // Reconstruct wavform from spectrum
+        let mut spec = specs[1]
+            .iter()
+            .map(|&[n, a]| Complex::from_polar(n, a))
+            .collect();
+        fft.inverse(&mut spec);
+        fix_scale(&mut spec);
+        buf.copy_from_slice(&spec.iter().map(|x| x.re).collect::<Vec<_>>());
+        specs.remove(0);
+    }
+}
+
+fn reconstruct(
+    window: &[f32],
+    slide_size: usize,
+    fft: &Fft<f32>,
+    spec: &[Vec<[f32; 2]>],
+) -> Vec<f32> {
+    let output_scale = slide_size as f32 / window.iter().copied().sum::<f32>();
+    let mut output = vec![0.0; window.len() + slide_size * (spec.len() - 1)];
+    for (i, p) in spec.iter().enumerate() {
+        let mut spec = p.iter().map(|&[n, a]| Complex::from_polar(n, a)).collect();
+        fft.inverse(&mut spec);
+        fix_scale(&mut spec);
+        for (j, (x, y)) in spec.iter().zip(window.iter()).enumerate() {
+            output[i * slide_size + j] += output_scale * x.re * y;
+        }
+    }
+    output
+}

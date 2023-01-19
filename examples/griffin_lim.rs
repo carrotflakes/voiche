@@ -40,7 +40,7 @@ fn griffin_lim(transformer: &Transformer, buf: &Vec<f32>) -> Vec<f32> {
         .iter()
         .map(|x| {
             x.iter()
-                .map(|x| (x * 543.0 + 12.0) % std::f32::consts::TAU)
+                .map(|x| (x * 543.0 + 12.0) % std::f32::consts::TAU) // TODO
                 .collect()
         })
         .collect();
