@@ -15,7 +15,7 @@ fn main() {
     let window_size = 1024;
     let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
-    let envelope_order = 20;
+    let envelope_order = window_size / 8;
     let formant = -0.2;
     let pitch = -0.4;
 

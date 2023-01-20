@@ -49,7 +49,7 @@ pub fn process_spectrum<T: Float>(
     let envelope = lift_spectrum(&fft, spectrum, |b| {
         b[envelope_order..len - envelope_order + 1].fill(Complex::zero());
     });
-    let shifted_envelope = formant_shift(envelope, formant_expand_amount);
+    let shifted_envelope = formant_shift(&envelope, formant_expand_amount);
 
     // pitch shift
     let shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
@@ -62,7 +62,7 @@ pub fn process_spectrum<T: Float>(
 
     remove_aliasing(pitch_change_amount, &mut fine_structure);
 
-    for i in 0..len / 2 + 1 {
+    for i in 0..=len / 2 {
         let amp = (shifted_envelope[i] + fine_structure[i]).exp();
         let phase = shifted_spectrum[i].arg();
         spectrum[i] = Complex::from_polar(amp, phase);
@@ -71,7 +71,7 @@ pub fn process_spectrum<T: Float>(
     fill_right_part_of_spectrum(spectrum);
 }
 
-pub fn formant_shift<T: Float>(envelope: Vec<T>, formant_expand_amount: T) -> Vec<T> {
+pub fn formant_shift<T: Float>(envelope: &[T], formant_expand_amount: T) -> Vec<T> {
     let len = envelope.len();
     let negative = T::from(-1000.0).unwrap();
 
