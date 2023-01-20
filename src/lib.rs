@@ -6,3 +6,18 @@ pub mod voice_change;
 pub mod windows;
 
 pub use rustfft;
+
+pub fn apply_window<'a, T: rustfft::num_traits::Float>(
+    window: &'a [T],
+    iter: impl Iterator<Item = T> + 'a,
+) -> impl Iterator<Item = T> + 'a {
+    iter.zip(window.iter()).map(|(x, &y)| x * y)
+}
+
+pub fn apply_window_with_scale<'a, T: rustfft::num_traits::Float>(
+    window: &'a [T],
+    scale: T,
+    iter: impl Iterator<Item = T> + 'a,
+) -> impl Iterator<Item = T> + 'a {
+    iter.zip(window.iter()).map(move |(x, &y)| x * y * scale)
+}

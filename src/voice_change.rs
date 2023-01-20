@@ -101,7 +101,7 @@ pub fn lift_spectrum<T: Float>(
 ) -> Vec<T> {
     let mut cepstrum: Vec<_> = spectrum
         .iter()
-        .map(|&x| Complex::new((x.norm() + T::epsilon()).ln(), T::zero()))
+        .map(|&x| Complex::from((x.norm() + T::epsilon()).ln()))
         .collect();
 
     fft.inverse(&mut cepstrum);

@@ -2,37 +2,34 @@ use std::iter::Sum;
 
 use rustfft::num_traits;
 
-pub fn transform<T: num_traits::Float + Copy + Sum>(
+use crate::{apply_window, apply_window_with_scale};
+
+pub fn transform<T: num_traits::Float + Sum>(
     slide_size: usize,
     window: Vec<T>,
     mut process: impl FnMut(&mut [T]),
     buf: &[T],
 ) -> Vec<T> {
-    let mut output = vec![T::zero(); buf.len()];
-
     if buf.is_empty() {
-        return output;
+        return vec![];
     }
+
+    let overlap_size = window.len() - slide_size;
+    let mut output = Vec::with_capacity(buf.len());
+    output.extend(vec![T::zero(); overlap_size]);
 
     let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
     for i in 0..(buf.len() - 1) / slide_size + 1 {
         let i = i * slide_size;
-        let mut b: Vec<_> = buf[i..]
-            .iter()
-            .zip(window.iter())
-            .map(|(&x, &y)| x * y)
-            .collect();
+        let mut b: Vec<_> = apply_window(&window, buf[i..].iter().copied()).collect();
         b.resize(window.len(), T::zero());
         process(&mut b);
-        let b: Vec<_> = b
-            .into_iter()
-            .enumerate()
-            .map(|(i, x)| x * window[i] * output_scale)
-            .collect();
-        for (x, &y) in output[i..].iter_mut().zip(b.iter()) {
-            *x = *x + y;
-        }
+        buffer_overlapping_write(
+            overlap_size,
+            &mut output,
+            apply_window_with_scale(&window, output_scale, b.into_iter()),
+        );
     }
     output
 }
@@ -99,11 +96,8 @@ impl<T: num_traits::Float + Copy + Sum, F: FnMut(&mut [T])> Transformer<T, F> {
         let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
         while input_buffer.len() >= window_size {
-            let mut buf: Vec<_> = input_buffer[..window_size]
-                .iter()
-                .zip(window.iter())
-                .map(|(&x, &y)| x * y)
-                .collect();
+            let mut buf: Vec<_> =
+                apply_window(window, input_buffer[..window_size].iter().copied()).collect();
 
             process_fn(&mut buf);
             debug_assert_eq!(window_size, buf.len());
@@ -111,9 +105,7 @@ impl<T: num_traits::Float + Copy + Sum, F: FnMut(&mut [T])> Transformer<T, F> {
             buffer_overlapping_write(
                 overlap_size,
                 output_buffer,
-                buf.into_iter()
-                    .zip(window.iter())
-                    .map(|(x, &y)| x * y * output_scale),
+                apply_window_with_scale(window, output_scale, buf.into_iter()),
             );
 
             input_buffer.splice(0..slide_size, []);

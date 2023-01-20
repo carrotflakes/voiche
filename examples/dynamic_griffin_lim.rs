@@ -2,6 +2,7 @@ mod wav;
 
 use rustfft::num_complex::Complex;
 use voiche::{
+    apply_window, apply_window_with_scale,
     fft::{fix_scale, Fft},
     transform,
     windows::hann_window,
@@ -53,10 +54,8 @@ fn dynamic_griffin_lim(
 
     move |buf: &mut [f32]| {
         // Get spectrum from input
-        let mut spec = buf
-            .iter()
-            .zip(window.iter())
-            .map(|(x, y)| Complex::new(x * y, 0.0))
+        let mut spec = apply_window(&window, buf.iter().copied())
+            .map(Complex::from)
             .collect();
         fft.forward(&mut spec);
         let prev = &specs[0];
@@ -87,10 +86,8 @@ fn dynamic_griffin_lim(
                 .step_by(slide_size)
                 .zip(specs.iter_mut())
             {
-                let mut spec = b
-                    .iter()
-                    .zip(window.iter())
-                    .map(|(x, y)| Complex::new(x * y, 0.0))
+                let mut spec = apply_window(&window, b.iter().copied())
+                    .map(Complex::from)
                     .collect();
                 fft.forward(&mut spec);
                 for i in 0..spec.len() {
@@ -132,9 +129,7 @@ fn reconstruct(
         transform::buffer_overlapping_write(
             overlap_size,
             &mut output,
-            spec.iter()
-                .zip(window.iter())
-                .map(|(x, y)| output_scale * x.re * y),
+            apply_window_with_scale(window, output_scale, spec.iter().map(|x| x.re)),
         );
     }
     output

@@ -17,7 +17,7 @@ impl<T: FftNum> Fft<T> {
     }
 
     pub fn retouch_spectrum(&self, buf: &mut [T], mut process: impl FnMut(&mut [Complex<T>])) {
-        let mut spec: Vec<_> = buf.iter().map(|&x| Complex::new(x, T::zero())).collect();
+        let mut spec: Vec<_> = buf.iter().map(|&x| Complex::from(x)).collect();
         self.forward(&mut spec);
         process(&mut spec);
         self.inverse(&mut spec);
