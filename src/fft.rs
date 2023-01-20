@@ -22,7 +22,7 @@ impl<T: FftNum> Fft<T> {
         process(&mut spec);
         self.inverse(&mut spec);
         fix_scale(&mut spec);
-        buf.copy_from_slice(&spec.iter().map(|x| x.re).collect::<Vec<_>>());
+        buf.iter_mut().zip(spec.iter()).for_each(|(x, y)| *x = y.re);
     }
 
     pub fn forward(&self, buffer: &mut Vec<Complex<T>>) {

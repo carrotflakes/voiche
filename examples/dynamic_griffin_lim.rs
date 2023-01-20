@@ -25,11 +25,12 @@ fn main() {
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
-            let mut transformer = transform::Transformer::new(
-                window.clone(),
-                slide_size,
-                dynamic_griffin_lim(window.clone(), slide_size, 8),
-            );
+            let fft = Fft::new(window_size);
+            let mut gl = dynamic_griffin_lim(window.clone(), slide_size, 8);
+            let mut transformer =
+                transform::Transformer::new(window.clone(), slide_size, move |buf| {
+                    fft.retouch_spectrum(buf, &mut gl)
+                });
             transformer.input_slice(&buf);
             let mut buf = Vec::new();
             transformer.finish(&mut buf);
@@ -47,17 +48,12 @@ fn dynamic_griffin_lim(
     window: Vec<f32>,
     slide_size: usize,
     iterate: usize,
-) -> impl FnMut(&mut [f32]) {
+) -> impl FnMut(&mut [Complex<f32>]) {
     let len = window.len();
     let fft = Fft::new(len);
     let mut specs = vec![vec![[0.0, 0.0]; len]];
 
-    move |buf: &mut [f32]| {
-        // Get spectrum from input
-        let mut spec = apply_window(&window, buf.iter().copied())
-            .map(Complex::from)
-            .collect();
-        fft.forward(&mut spec);
+    move |spec: &mut [Complex<f32>]| {
         let prev = &specs[0];
         let phase_factor = std::f32::consts::TAU * slide_size as f32 / len as f32;
         specs.push(
@@ -96,14 +92,9 @@ fn dynamic_griffin_lim(
             }
         }
 
-        // Reconstruct wavform from spectrum
-        let mut spec = specs[1]
-            .iter()
-            .map(|&[n, a]| Complex::from_polar(n, a))
-            .collect();
-        fft.inverse(&mut spec);
-        fix_scale(&mut spec);
-        buf.copy_from_slice(&spec.iter().map(|x| x.re).collect::<Vec<_>>());
+        spec.iter_mut()
+            .zip(specs[1].iter())
+            .for_each(|(x, &[n, a])| *x = Complex::from_polar(n, a));
         specs.remove(0);
     }
 }
