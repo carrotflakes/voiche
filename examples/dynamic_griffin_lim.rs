@@ -82,21 +82,21 @@ fn dynamic_griffin_lim(
             let waveform = reconstruct(&window, slide_size, &fft, &specs);
 
             // Update phases
-            waveform
+            for (b, p) in waveform
                 .windows(len)
                 .step_by(slide_size)
                 .zip(specs.iter_mut())
-                .for_each(|(b, p)| {
-                    let mut spec = b
-                        .iter()
-                        .zip(window.iter())
-                        .map(|(x, y)| Complex::new(x * y, 0.0))
-                        .collect();
-                    fft.forward(&mut spec);
-                    for i in 0..spec.len() {
-                        p[i][1] = spec[i].arg();
-                    }
-                });
+            {
+                let mut spec = b
+                    .iter()
+                    .zip(window.iter())
+                    .map(|(x, y)| Complex::new(x * y, 0.0))
+                    .collect();
+                fft.forward(&mut spec);
+                for i in 0..spec.len() {
+                    p[i][1] = spec[i].arg();
+                }
+            }
         }
 
         // Reconstruct wavform from spectrum
@@ -118,17 +118,23 @@ fn reconstruct(
     specs: &[Vec<[f32; 2]>],
 ) -> Vec<f32> {
     let output_scale = slide_size as f32 / window.iter().copied().sum::<f32>();
-    let mut output = vec![0.0; window.len() + slide_size * (specs.len() - 1)];
-    for (i, spec) in specs.iter().enumerate() {
+    let mut output = Vec::with_capacity(window.len() + slide_size * (specs.len() - 1));
+    output.extend(vec![0.0; window.len() - slide_size]);
+    for spec in specs {
         let mut spec = spec
             .iter()
             .map(|&[n, a]| Complex::from_polar(n, a))
             .collect();
         fft.inverse(&mut spec);
         fix_scale(&mut spec);
-        for (j, (x, y)) in spec.iter().zip(window.iter()).enumerate() {
-            output[i * slide_size + j] += output_scale * x.re * y;
-        }
+
+        transform::buffer_overlapping_write(
+            window.len() - slide_size,
+            &mut output,
+            spec.iter()
+                .zip(window.iter())
+                .map(|(x, y)| output_scale * x.re * y),
+        );
     }
     output
 }

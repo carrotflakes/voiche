@@ -99,28 +99,41 @@ impl<T: num_traits::Float + Copy + Sum, F: FnMut(&mut [T])> Transformer<T, F> {
         let output_scale = T::from(slide_size).unwrap() / window.iter().copied().sum::<T>();
 
         while input_buffer.len() >= window_size {
-            let mut b: Vec<_> = input_buffer[..window_size]
+            let mut buf: Vec<_> = input_buffer[..window_size]
                 .iter()
                 .zip(window.iter())
                 .map(|(&x, &y)| x * y)
                 .collect();
 
-            process_fn(&mut b);
-            debug_assert_eq!(window_size, b.len());
+            process_fn(&mut buf);
+            debug_assert_eq!(window_size, buf.len());
 
-            let mut iter = b
-                .into_iter()
-                .zip(window.iter())
-                .map(|(x, &y)| x * y * output_scale);
-            let output_buffer_len = output_buffer.len();
-            for x in output_buffer[output_buffer_len - overlap_size..].iter_mut() {
-                *x = *x + iter.next().unwrap();
-            }
-            output_buffer.extend(iter);
+            buffer_overlapping_write(
+                overlap_size,
+                output_buffer,
+                buf.into_iter()
+                    .zip(window.iter())
+                    .map(|(x, &y)| x * y * output_scale),
+            );
 
             input_buffer.splice(0..slide_size, []);
         }
     }
+}
+
+pub fn buffer_overlapping_write<T: std::ops::Add<T, Output = T> + Clone>(
+    overlap_size: usize,
+    buffer: &mut Vec<T>,
+    mut other: impl Iterator<Item = T>,
+) {
+    let len = buffer.len();
+    for i in len - overlap_size..len {
+        let Some(x) = other.next() else {
+            return;
+        };
+        buffer[i] = buffer[i].clone() + x;
+    }
+    buffer.extend(other);
 }
 
 #[test]
