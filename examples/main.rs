@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{transform::transform, voice_change::transform_processor, windows};
+use voiche::{transform::transform, voice_change, windows};
 
 fn main() {
     let file = std::env::args()
@@ -25,7 +25,13 @@ fn main() {
             transform(
                 slide_size,
                 window.clone(),
-                transform_processor(window_size, slide_size, envelope_order, formant, pitch),
+                voice_change::transform_processor(
+                    window_size,
+                    slide_size,
+                    envelope_order,
+                    formant,
+                    pitch,
+                ),
                 buf,
             )
         })
@@ -34,5 +40,5 @@ fn main() {
     dbg!(start.elapsed());
     dbg!(wav::power(&bufs[0]));
 
-    wav::save(file.replace(".", "_out."), spec, bufs);
+    wav::save(file.replace(".", "_main."), spec, bufs);
 }
