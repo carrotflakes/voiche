@@ -117,9 +117,10 @@ fn reconstruct(
     fft: &Fft<f32>,
     specs: &[Vec<[f32; 2]>],
 ) -> Vec<f32> {
+    let overlap_size = window.len() - slide_size;
     let output_scale = slide_size as f32 / window.iter().copied().sum::<f32>();
-    let mut output = Vec::with_capacity(window.len() + slide_size * (specs.len() - 1));
-    output.extend(vec![0.0; window.len() - slide_size]);
+    let mut output = Vec::with_capacity(overlap_size + specs.len() * slide_size);
+    output.extend(vec![0.0; overlap_size]);
     for spec in specs {
         let mut spec = spec
             .iter()
@@ -129,7 +130,7 @@ fn reconstruct(
         fix_scale(&mut spec);
 
         transform::buffer_overlapping_write(
-            window.len() - slide_size,
+            overlap_size,
             &mut output,
             spec.iter()
                 .zip(window.iter())
