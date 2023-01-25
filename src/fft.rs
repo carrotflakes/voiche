@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use rustfft::{num_complex::Complex, FftNum};
 
+#[derive(Clone)]
 pub struct Fft<T: FftNum> {
     forward: Arc<dyn rustfft::Fft<T>>,
     inverse: Arc<dyn rustfft::Fft<T>>,
