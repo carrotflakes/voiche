@@ -4,6 +4,22 @@ pub fn rectangular_window<T: num_traits::Float + num_traits::FloatConst>(size: u
     vec![T::one(); size]
 }
 
+pub fn trapezoid_window<T: num_traits::Float + num_traits::FloatConst>(
+    size: usize,
+    sleeve: usize,
+) -> Vec<T> {
+    let sleeve_f = T::from(sleeve + 1).unwrap();
+    let size_f = T::from(size).unwrap();
+    (0..size)
+        .map(|i| {
+            let i_f = T::from(i).unwrap();
+            ((i_f + T::one()) / sleeve_f)
+                .min((size_f - i_f) / sleeve_f)
+                .min(T::one())
+        })
+        .collect()
+}
+
 pub fn hann_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
     (0..size)
         .map(|i| {
@@ -45,6 +61,11 @@ pub fn blackman_window_default<T: num_traits::Float + num_traits::FloatConst>(
 
 #[test]
 fn test() {
+    dbg!(trapezoid_window::<f32>(8, 0));
+    dbg!(trapezoid_window::<f32>(8, 3));
+    dbg!(trapezoid_window::<f32>(8, 4));
+    dbg!(trapezoid_window::<f32>(8, 5));
+
     dbg!(hann_window::<f32>(10));
     dbg!(hamming_window::<f32>(10));
     dbg!(blackman_window::<f32>(0.16, 10));
