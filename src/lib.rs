@@ -1,5 +1,6 @@
 pub mod fft;
 pub mod float;
+pub mod overlapping_flatten;
 pub mod pitch_detection;
 pub mod pitch_shift;
 pub mod transform;
