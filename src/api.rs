@@ -2,6 +2,7 @@ use crate::{
     apply_window, apply_window_with_scale,
     fft::{self, Fft},
     float::Float,
+    pitch_detection,
     pitch_shift::{self, pitch_shifter},
     voice_change,
 };
@@ -63,6 +64,49 @@ pub fn voice_change<T: Float + std::iter::Sum>(
                     pitch,
                     spectrum,
                 );
+            },
+        )
+    }
+}
+
+pub fn pitch_correct<T: Float + std::iter::Sum, F: FnMut(T) -> T>(
+    pre_window: Vec<T>,
+    post_window: Vec<T>,
+    slide_size: usize,
+    sample_rate: u32,
+    mut pitch_fn: F,
+) -> impl FnMut(&[T]) -> Vec<T> {
+    let sample_rate = T::from(sample_rate).unwrap();
+    let window_size = pre_window.len();
+    let fft = Fft::new(window_size);
+    let mut pitch_shift = pitch_shift::pitch_shifter(window_size);
+    let min_wavelength = sample_rate / T::from(440.0 * 5.0).unwrap();
+    let peak_threshold = T::from(0.4).unwrap();
+
+    move |buf: &[T]| {
+        let b = buf.to_vec();
+
+        retouch_spectrum(
+            &fft,
+            &pre_window,
+            &post_window,
+            slide_size,
+            buf,
+            |spectrum| {
+                let nsdf = pitch_detection::compute_nsdf(&fft, &b);
+                let peaks = pitch_detection::compute_peaks(&nsdf[..nsdf.len() / 2]);
+                let peaks: Vec<_> = peaks.into_iter().filter(|p| min_wavelength < p.0).collect();
+                let max_peak = peaks.iter().fold(T::zero(), |a, p| a.max(p.1));
+                let pitch = if peak_threshold < max_peak {
+                    let t = T::from(0.9).unwrap();
+                    let peak = peaks.iter().find(|p| max_peak * t <= p.1).unwrap().clone();
+                    let wavelength = peak.0;
+                    let freq = sample_rate / wavelength;
+                    pitch_fn(freq)
+                } else {
+                    T::zero()
+                };
+                pitch_shift::process_spectrum(slide_size, &mut pitch_shift, pitch, spectrum);
             },
         )
     }

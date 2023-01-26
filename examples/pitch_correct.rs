@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{api, fft::Fft, pitch_detection, pitch_shift, transform::transform, windows};
+use voiche::{api, transform::transform, windows};
 
 fn main() {
     let file = std::env::args()
@@ -19,47 +19,19 @@ fn main() {
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
-            let process = {
-                let window = windows::hann_window(window_size);
-                let fft = Fft::new(window_size);
-                let mut pitch_shift = pitch_shift::pitch_shifter(window_size);
-                let min_wavelength = sample_rate as f32 / (440.0 * 5.0);
-                let peak_threshold = 0.4;
-
-                move |buf: &[f32]| {
-                    let b = buf.to_vec();
-
-                    api::retouch_spectrum(&fft, &window, &window, slide_size, buf, |spectrum| {
-                        let nsdf = pitch_detection::compute_nsdf(&fft, &b);
-                        let peaks = pitch_detection::compute_peaks(&nsdf[..nsdf.len() / 2]);
-                        let peaks: Vec<_> =
-                            peaks.into_iter().filter(|p| min_wavelength < p.0).collect();
-                        let max_peak = peaks.iter().fold(0.0f32, |a, p| a.max(p.1));
-                        let pitch = if peak_threshold < max_peak {
-                            let peak = peaks
-                                .iter()
-                                .find(|p| max_peak * 0.9 <= p.1)
-                                .unwrap()
-                                .clone();
-                            let wavelength = peak.0;
-                            let freq = sample_rate as f32 / wavelength;
-                            let nn = (freq / 440.0).log2() * 12.0;
-                            // approximately scale
-                            let nn_correct = ((nn * (7.0 / 12.0)).round() / (7.0 / 12.0)).round();
-                            -(nn - nn_correct) / 12.0
-                            // -(freq / 220.0).log2()
-                        } else {
-                            0.0
-                        };
-                        pitch_shift::process_spectrum(
-                            slide_size,
-                            &mut pitch_shift,
-                            pitch,
-                            spectrum,
-                        );
-                    })
-                }
-            };
+            let process = api::pitch_correct(
+                windows::hann_window(window_size),
+                windows::trapezoid_window(window_size, window_size - slide_size),
+                slide_size,
+                sample_rate,
+                |freq: f32| {
+                    let nn = (freq / 440.0).log2() * 12.0;
+                    // approximately scale
+                    let nn_correct = ((nn * (7.0 / 12.0)).round() / (7.0 / 12.0)).round();
+                    -(nn - nn_correct) / 12.0
+                    // -(freq / 220.0).log2()
+                },
+            );
             transform(window_size, slide_size, process, buf)
         })
         .collect();
