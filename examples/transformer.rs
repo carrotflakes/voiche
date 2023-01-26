@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{transform::Transformer, voice_change, windows::hann_window};
+use voiche::{api, transform::Transformer, windows::hann_window};
 
 fn main() {
     let file = std::env::args()
@@ -23,10 +23,11 @@ fn main() {
         .iter()
         .map(|buf| {
             let mut transformer = Transformer::new(
-                window.clone(),
+                window_size,
                 slide_size,
-                voice_change::transform_processor(
-                    window_size,
+                api::voice_change(
+                    window.clone(),
+                    window.clone(),
                     slide_size,
                     envelope_order,
                     formant,

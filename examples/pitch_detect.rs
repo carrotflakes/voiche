@@ -29,24 +29,26 @@ fn main() {
             // (phase * 2.0 - 1.0) * g
         }
     };
+    let process = |buf| {
+        let min_wavelength = sample_rate as f32 / (440.0 * 5.0);
+        let peak = pitch_detect(&fft, &window, buf, min_wavelength, peak_threshold);
+        let mut gain = 0.0;
+        if let Some(peak) = peak {
+            wavelength = peak.0;
+            gain = peak.1;
+        }
+
+        let mut buf = vec![0.0; slide_size];
+        for x in buf.iter_mut() {
+            *x = osc(wavelength, gain.min(1.0));
+        }
+        buf
+    };
+
     let converted: Vec<_> = bufs[0]
         .windows(window_size)
         .step_by(slide_size)
-        .flat_map(|buf| {
-            let min_wavelength = sample_rate as f32 / (440.0 * 5.0);
-            let peak = pitch_detect(&fft, &window, buf, min_wavelength, peak_threshold);
-            let mut gain = 0.0;
-            if let Some(peak) = peak {
-                wavelength = peak.0;
-                gain = peak.1;
-            }
-
-            let mut buf = vec![0.0; slide_size];
-            for x in buf.iter_mut() {
-                *x = osc(wavelength, gain.min(1.0));
-            }
-            buf
-        })
+        .flat_map(process)
         .collect();
 
     dbg!(start.elapsed());

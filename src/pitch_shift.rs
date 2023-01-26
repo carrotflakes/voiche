@@ -5,25 +5,7 @@ use rustfft::{
     num_traits::{Num, One, Zero},
 };
 
-use crate::{
-    fft::{fill_right_part_of_spectrum, Fft},
-    float::Float,
-};
-
-pub fn transform_processor<T: Float>(
-    window_size: usize,
-    slide_size: usize,
-    pitch: T,
-) -> impl FnMut(&mut [T]) {
-    let fft = Fft::new(window_size);
-    let mut pitch_shift = pitch_shifter(window_size);
-
-    move |buf| {
-        fft.retouch_spectrum(buf, |spectrum| {
-            process_spectrum(slide_size, &mut pitch_shift, pitch, spectrum);
-        })
-    }
-}
+use crate::{fft::fill_right_part_of_spectrum, float::Float};
 
 pub fn process_spectrum<T: Float>(
     slide_size: usize,

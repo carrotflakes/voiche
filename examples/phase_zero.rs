@@ -1,7 +1,7 @@
 mod wav;
 
 use rustfft::num_complex::Complex;
-use voiche::{fft::Fft, transform::transform, windows};
+use voiche::{api, fft::Fft, transform::transform, windows};
 
 fn main() {
     let file = std::env::args()
@@ -22,10 +22,10 @@ fn main() {
         .iter()
         .map(|buf| {
             transform(
+                window_size,
                 slide_size,
-                window.clone(),
                 |buf| {
-                    fft.retouch_spectrum(buf, |buf| {
+                    api::retouch_spectrum(&fft, &window, &window, slide_size, buf, |buf| {
                         buf.iter_mut()
                             .for_each(|c| *c = Complex::from_polar(c.norm(), 0.0))
                     })

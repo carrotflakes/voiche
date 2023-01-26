@@ -2,9 +2,9 @@ mod wav;
 
 use rustfft::num_complex::Complex;
 use voiche::{
-    apply_window, apply_window_with_scale,
+    api, apply_window, apply_window_with_scale,
     fft::{fix_scale, Fft},
-    transform,
+    overlapping_flatten, transform,
     windows::hann_window,
 };
 
@@ -20,16 +20,16 @@ fn main() {
     let start = std::time::Instant::now();
     let window_size = 1024;
     let slide_size = window_size / 4;
-    let window = hann_window(window_size);
 
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
+            let window = hann_window(window_size);
             let fft = Fft::new(window_size);
             let mut gl = dynamic_griffin_lim(window.clone(), slide_size, 8);
             let mut transformer =
-                transform::Transformer::new(window.clone(), slide_size, move |buf| {
-                    fft.retouch_spectrum(buf, &mut gl)
+                transform::Transformer::new(window_size, slide_size, move |buf| {
+                    api::retouch_spectrum(&fft, &window, &window, slide_size, buf, &mut gl)
                 });
             transformer.input_slice(&buf);
             let mut buf = Vec::new();
@@ -117,7 +117,7 @@ fn reconstruct(
         fft.inverse(&mut spec);
         fix_scale(&mut spec);
 
-        transform::buffer_overlapping_write(
+        overlapping_flatten::buffer_overlapping_write(
             overlap_size,
             &mut output,
             apply_window_with_scale(window, output_scale, spec.iter().map(|x| x.re)),

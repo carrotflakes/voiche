@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{pitch_shift, transform::transform, windows::hann_window};
+use voiche::{api, transform::transform, windows::hann_window};
 
 fn main() {
     let file = std::env::args()
@@ -20,9 +20,9 @@ fn main() {
         .iter()
         .map(|buf| {
             transform(
+                window_size,
                 slide_size,
-                window.clone(),
-                pitch_shift::transform_processor(window_size, slide_size, -0.4),
+                api::pitch_shift(window.clone(), window.clone(), slide_size, -0.4),
                 &buf,
             )
         })

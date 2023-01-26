@@ -7,7 +7,7 @@ use std::{
     io::{Read, Write},
 };
 
-use voiche::{transform::Transformer, voice_change, windows};
+use voiche::{api, transform::Transformer, windows};
 
 fn main() {
     let window_size = 1024;
@@ -18,9 +18,16 @@ fn main() {
     let pitch = 0.4;
 
     let mut transformer = Transformer::new(
-        window.clone(),
+        window_size,
         slide_size,
-        voice_change::transform_processor(window_size, slide_size, envelope_order, formant, pitch),
+        api::voice_change(
+            window.clone(),
+            window.clone(),
+            slide_size,
+            envelope_order,
+            formant,
+            pitch,
+        ),
     );
 
     let mut stdin = std::io::stdin().lock();

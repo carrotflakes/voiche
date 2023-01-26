@@ -1,34 +1,9 @@
 use crate::{
     fft::{fill_right_part_of_spectrum, fix_scale, Fft},
     float::Float,
-    pitch_shift::{pitch_shifter, remove_aliasing},
+    pitch_shift::remove_aliasing,
 };
 use rustfft::{num_complex::Complex, num_traits::Zero};
-
-pub fn transform_processor<T: Float>(
-    window_size: usize,
-    slide_size: usize,
-    envelope_order: usize,
-    formant: T,
-    pitch: T,
-) -> impl FnMut(&mut [T]) {
-    let fft = Fft::new(window_size);
-    let mut pitch_shift = pitch_shifter(window_size);
-
-    move |buf| {
-        fft.retouch_spectrum(buf, |spectrum| {
-            process_spectrum(
-                slide_size,
-                &fft,
-                &mut pitch_shift,
-                envelope_order,
-                formant,
-                pitch,
-                spectrum,
-            );
-        });
-    }
-}
 
 pub fn process_spectrum<T: Float>(
     slide_size: usize,

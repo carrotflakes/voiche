@@ -1,3 +1,4 @@
+pub mod api;
 pub mod fft;
 pub mod float;
 pub mod overlapping_flatten;

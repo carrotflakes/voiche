@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{fft::Fft, pitch_detection, pitch_shift, transform::transform, windows};
+use voiche::{api, fft::Fft, pitch_detection, pitch_shift, transform::transform, windows};
 
 fn main() {
     let file = std::env::args()
@@ -14,22 +14,22 @@ fn main() {
 
     let start = std::time::Instant::now();
     let window_size = 1024;
-    let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
 
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
             let process = {
+                let window = windows::hann_window(window_size);
                 let fft = Fft::new(window_size);
                 let mut pitch_shift = pitch_shift::pitch_shifter(window_size);
                 let min_wavelength = sample_rate as f32 / (440.0 * 5.0);
                 let peak_threshold = 0.4;
 
-                move |buf: &mut [f32]| {
+                move |buf: &[f32]| {
                     let b = buf.to_vec();
 
-                    fft.retouch_spectrum(buf, |spectrum| {
+                    api::retouch_spectrum(&fft, &window, &window, slide_size, buf, |spectrum| {
                         let nsdf = pitch_detection::compute_nsdf(&fft, &b);
                         let peaks = pitch_detection::compute_peaks(&nsdf[..nsdf.len() / 2]);
                         let peaks: Vec<_> =
@@ -60,7 +60,7 @@ fn main() {
                     })
                 }
             };
-            transform(slide_size, window.clone(), process, buf)
+            transform(window_size, slide_size, process, buf)
         })
         .collect();
 

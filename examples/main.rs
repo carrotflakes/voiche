@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{transform::transform, voice_change, windows};
+use voiche::{api, transform, windows};
 
 fn main() {
     let file = std::env::args()
@@ -13,7 +13,6 @@ fn main() {
 
     let start = std::time::Instant::now();
     let window_size = 1024;
-    let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
     let envelope_order = window_size / 8;
     let formant = -0.2;
@@ -22,18 +21,16 @@ fn main() {
     let bufs: Vec<_> = bufs
         .iter()
         .map(|buf| {
-            transform(
+            let process = api::voice_change(
+                windows::hann_window(window_size),
+                windows::trapezoid_window(window_size, window_size - slide_size),
                 slide_size,
-                window.clone(),
-                voice_change::transform_processor(
-                    window_size,
-                    slide_size,
-                    envelope_order,
-                    formant,
-                    pitch,
-                ),
-                buf,
-            )
+                envelope_order,
+                formant,
+                pitch,
+            );
+
+            transform::transform(window_size, slide_size, process, &buf)
         })
         .collect();
 
