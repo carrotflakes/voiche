@@ -1,34 +1,25 @@
 mod wav;
 
-use voiche::{api, transform::transform, windows::hann_window};
+use voiche::{api, transform, windows};
 
 fn main() {
-    let file = std::env::args()
-        .skip(1)
-        .next()
-        .unwrap_or("epic.wav".to_string());
-
-    let (spec, bufs) = wav::load(&file);
-    dbg!(wav::power(&bufs[0]));
-
-    let start = std::time::Instant::now();
     let window_size = 1024;
-    let window = hann_window(window_size);
     let slide_size = window_size / 4;
+    let pitch = -0.4;
 
-    let bufs: Vec<_> = bufs
-        .iter()
-        .map(|buf| {
-            transform(
-                window_size,
-                slide_size,
-                api::pitch_shift(window.clone(), window.clone(), slide_size, -0.4),
-                &buf,
-            )
-        })
-        .collect();
-    dbg!(start.elapsed());
-    dbg!(wav::power(&bufs[0]));
+    wav::wav_file_convert("ps", |_sample_rate, channels| {
+        channels
+            .into_iter()
+            .map(|buf| {
+                let process = api::pitch_shift(
+                    windows::hann_window(window_size),
+                    windows::trapezoid_window(window_size, window_size - slide_size),
+                    slide_size,
+                    pitch,
+                );
 
-    wav::save(file.replace(".", "_ps."), spec, bufs);
+                transform::transform(window_size, slide_size, process, &buf)
+            })
+            .collect()
+    });
 }

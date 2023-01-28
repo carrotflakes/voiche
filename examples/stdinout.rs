@@ -8,30 +8,31 @@ use voiche::{api, transform::Transformer, windows};
 
 fn main() {
     let window_size = 1024;
-    let window = windows::hann_window(window_size);
     let slide_size = window_size / 4;
     let envelope_order = window_size / 8;
     let formant = 0.2;
     let pitch = 0.4;
 
-    let transformer = Transformer::new(
-        window_size,
+    let process = api::voice_change(
+        windows::hann_window(window_size),
+        windows::trapezoid_window(window_size, window_size - slide_size),
         slide_size,
-        api::voice_change(
-            window.clone(),
-            windows::trapezoid_window(window_size, window_size - slide_size),
-            slide_size,
-            envelope_order,
-            formant,
-            pitch,
-        ),
+        envelope_order,
+        formant,
+        pitch,
     );
 
-    transform_mic_to_speaker(transformer);
+    transform_mic_to_speaker(window_size, slide_size, process);
 }
 
-pub fn transform_mic_to_speaker(mut transformer: Transformer<f32, impl FnMut(&[f32]) -> Vec<f32>>) {
+pub fn transform_mic_to_speaker(
+    window_size: usize,
+    slide_size: usize,
+    process: impl FnMut(&[f32]) -> Vec<f32>,
+) {
     use std::io::{Read, Write};
+
+    let mut transformer = Transformer::new(window_size, slide_size, process);
 
     let mut stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout().lock();

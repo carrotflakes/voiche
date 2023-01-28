@@ -9,39 +9,25 @@ use voiche::{
 };
 
 fn main() {
-    let file = std::env::args()
-        .skip(1)
-        .next()
-        .unwrap_or("epic.wav".to_string());
-
-    let (spec, bufs) = wav::load(&file);
-    dbg!(wav::power(&bufs[0]));
-
-    let start = std::time::Instant::now();
     let window_size = 1024;
     let slide_size = window_size / 4;
 
-    let bufs: Vec<_> = bufs
-        .iter()
-        .map(|buf| {
-            let window = hann_window(window_size);
-            let fft = Fft::new(window_size);
-            let mut gl = dynamic_griffin_lim(window.clone(), slide_size, 8);
-            let mut transformer =
-                transform::Transformer::new(window_size, slide_size, move |buf| {
+    wav::wav_file_convert("dgl", |_sample_rate, channels| {
+        channels
+            .into_iter()
+            .map(|buf| {
+                let window = hann_window(window_size);
+                let fft = Fft::new(window_size);
+                let mut gl = dynamic_griffin_lim(window.clone(), slide_size, 8);
+
+                let process = move |buf: &[f32]| {
                     api::retouch_spectrum(&fft, &window, &window, slide_size, buf, &mut gl)
-                });
-            transformer.input_slice(&buf);
-            let mut buf = Vec::new();
-            transformer.finish(&mut buf);
-            buf
-        })
-        .collect();
+                };
 
-    dbg!(start.elapsed());
-    dbg!(wav::power(&bufs[0]));
-
-    wav::save(file.replace(".", "_dgl."), spec, bufs);
+                transform::transform(window_size, slide_size, process, &buf)
+            })
+            .collect()
+    });
 }
 
 fn dynamic_griffin_lim(

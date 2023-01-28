@@ -3,60 +3,49 @@ mod wav;
 use voiche::{api, overlapping_flatten::OverlappingFlattenTrait, windows};
 
 fn main() {
-    let file = std::env::args()
-        .skip(1)
-        .next()
-        .unwrap_or("epic.wav".to_string());
-
-    let (spec, bufs) = wav::load(&file);
-    dbg!(wav::power(&bufs[0]));
-
-    let start = std::time::Instant::now();
     let window_size = 1024;
     let slide_size = window_size / 4;
     let time_rate = 1.1;
 
-    let bufs: Vec<_> = bufs
-        .iter()
-        .map(|buf| {
-            // resample(buf, 0.7)
+    wav::wav_file_convert("ts", |_sample_rate, channels| {
+        channels
+            .into_iter()
+            .map(|buf| {
+                // resample(buf, 0.7)
 
-            // let window = windows::trapezoid_window(window_size, window_size - slide_size);
-            // buf.windows(window_size)
-            //     .step_by((slide_size as f32 * time_rate) as usize)
-            //     .map(|b| apply_window(&window, b.iter().copied()))
-            //     .overlapping_flatten(window_size - slide_size)
-            //     .collect::<Vec<_>>()
+                // let window = windows::trapezoid_window(window_size, window_size - slide_size);
+                // buf.windows(window_size)
+                //     .step_by((slide_size as f32 * time_rate) as usize)
+                //     .map(|b| apply_window(&window, b.iter().copied()))
+                //     .overlapping_flatten(window_size - slide_size)
+                //     .collect::<Vec<_>>()
 
-            resample(buf, time_rate)
-                .windows(window_size)
-                .step_by(slide_size)
-                .map(api::pitch_shift(
-                    windows::hann_window(window_size),
-                    windows::trapezoid_window(window_size, window_size - slide_size),
-                    slide_size,
-                    time_rate.log2(),
-                ))
-                .overlapping_flatten(window_size - slide_size)
-                .collect::<Vec<_>>()
+                resample(&buf, time_rate)
+                    .windows(window_size)
+                    .step_by(slide_size)
+                    .map(api::pitch_shift(
+                        windows::hann_window(window_size),
+                        windows::trapezoid_window(window_size, window_size - slide_size),
+                        slide_size,
+                        time_rate.log2(),
+                    ))
+                    .overlapping_flatten(window_size - slide_size)
+                    .collect::<Vec<_>>()
 
-            // buf.windows(window_size)
-            // .step_by((slide_size as f32 * time_rate) as usize)
-            // .map(pitch_shift(
-            //     windows::hann_window(window_size),
-            //     windows::trapezoid_window(window_size, window_size - slide_size),
-            //     slide_size,
-            //     (slide_size as f32 * time_rate) as usize,
-            //     time_rate.log2(),
-            // ))
-            // .overlapping_flatten(window_size - slide_size)
-            // .collect::<Vec<_>>()
-        })
-        .collect();
-    dbg!(start.elapsed());
-    dbg!(wav::power(&bufs[0]));
-
-    wav::save(file.replace(".", "_ts."), spec, bufs);
+                // buf.windows(window_size)
+                // .step_by((slide_size as f32 * time_rate) as usize)
+                // .map(pitch_shift(
+                //     windows::hann_window(window_size),
+                //     windows::trapezoid_window(window_size, window_size - slide_size),
+                //     slide_size,
+                //     (slide_size as f32 * time_rate) as usize,
+                //     time_rate.log2(),
+                // ))
+                // .overlapping_flatten(window_size - slide_size)
+                // .collect::<Vec<_>>()
+            })
+            .collect()
+    });
 }
 
 pub fn resample<T: voiche::float::Float>(buf: &[T], rate: T) -> Vec<T> {
