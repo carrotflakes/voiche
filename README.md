@@ -1,6 +1,6 @@
 # voiche
 
-A naive voice changer library.
+Naive voice changer implementations.
 
 ## Examples
 
@@ -10,7 +10,7 @@ A naive voice changer library.
 cargo run --release --example main -- something.wav
 ```
 
-### Voice change from mic to speaker
+### Voice change mic to speaker
 
 Assuming you already have PulseAudio installed, you can run it with the following command:
 
