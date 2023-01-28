@@ -2,6 +2,33 @@ use std::path::Path;
 
 use hound::{SampleFormat, WavSpec};
 
+pub fn wav_file_convert(
+    filename_suffix: &str,
+    mut process: impl FnMut(u32, Vec<Vec<f32>>) -> Vec<Vec<f32>>,
+) {
+    let file = std::env::args()
+        .skip(1)
+        .next()
+        .unwrap_or("epic.wav".to_string());
+
+    let (mut spec, bufs) = load(&file);
+    dbg!(power(&bufs[0]));
+
+    let start = std::time::Instant::now();
+
+    let bufs = process(spec.sample_rate, bufs);
+
+    dbg!(start.elapsed());
+    dbg!(power(&bufs[0]));
+
+    spec.channels = bufs.len() as u16;
+    save(
+        file.replace(".", &format!("_{}.", filename_suffix)),
+        spec,
+        bufs,
+    );
+}
+
 pub fn load(p: impl AsRef<Path>) -> (WavSpec, Vec<Vec<f32>>) {
     let mut reader = hound::WavReader::open(&p).unwrap();
     let spec = reader.spec();

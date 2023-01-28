@@ -1,11 +1,8 @@
-// Voice change from mic to speaker
+// Voice change mic to speaker
 // Usage:
 // parec -r --raw --format=s16ne --channels=1 | cargo run --release --example stdinout 2> /dev/null | pacat --raw --format=s16ne --channels=1
 
-use std::{
-    convert::TryInto,
-    io::{Read, Write},
-};
+use std::convert::TryInto;
 
 use voiche::{api, transform::Transformer, windows};
 
@@ -17,18 +14,24 @@ fn main() {
     let formant = 0.2;
     let pitch = 0.4;
 
-    let mut transformer = Transformer::new(
+    let transformer = Transformer::new(
         window_size,
         slide_size,
         api::voice_change(
             window.clone(),
-            window.clone(),
+            windows::trapezoid_window(window_size, window_size - slide_size),
             slide_size,
             envelope_order,
             formant,
             pitch,
         ),
     );
+
+    transform_mic_to_speaker(transformer);
+}
+
+pub fn transform_mic_to_speaker(mut transformer: Transformer<f32, impl FnMut(&[f32]) -> Vec<f32>>) {
+    use std::io::{Read, Write};
 
     let mut stdin = std::io::stdin().lock();
     let mut stdout = std::io::stdout().lock();
