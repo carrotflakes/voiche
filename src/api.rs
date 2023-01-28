@@ -1,3 +1,7 @@
+use std::iter::Sum;
+
+use crate::num_complex::Complex;
+
 use crate::{
     apply_window, apply_window_with_scale,
     fft::{self, Fft},
@@ -7,7 +11,7 @@ use crate::{
     voice_change,
 };
 
-pub fn pitch_shift<T: Float + std::iter::Sum>(
+pub fn pitch_shift<T: Float + Sum>(
     pre_window: Vec<T>,
     post_window: Vec<T>,
     slide_size: usize,
@@ -33,7 +37,7 @@ pub fn pitch_shift<T: Float + std::iter::Sum>(
     }
 }
 
-pub fn voice_change<T: Float + std::iter::Sum>(
+pub fn voice_change<T: Float + Sum>(
     pre_window: Vec<T>,
     post_window: Vec<T>,
     slide_size: usize,
@@ -69,7 +73,7 @@ pub fn voice_change<T: Float + std::iter::Sum>(
     }
 }
 
-pub fn pitch_correct<T: Float + std::iter::Sum, F: FnMut(T) -> T>(
+pub fn pitch_correct<T: Float + Sum, F: FnMut(T) -> T>(
     pre_window: Vec<T>,
     post_window: Vec<T>,
     slide_size: usize,
@@ -112,16 +116,16 @@ pub fn pitch_correct<T: Float + std::iter::Sum, F: FnMut(T) -> T>(
     }
 }
 
-pub fn retouch_spectrum<T: Float + std::iter::Sum>(
+pub fn retouch_spectrum<T: Float + Sum>(
     fft: &Fft<T>,
     pre_window: &[T],
     post_window: &[T],
     slide_size: usize,
     buf: &[T],
-    mut process: impl FnMut(&mut [rustfft::num_complex::Complex<T>]),
+    mut process: impl FnMut(&mut [Complex<T>]),
 ) -> Vec<T> {
     let mut spec: Vec<_> = apply_window(pre_window, buf.iter().copied())
-        .map(rustfft::num_complex::Complex::from)
+        .map(Complex::from)
         .collect();
     fft.forward(&mut spec);
     process(&mut spec);

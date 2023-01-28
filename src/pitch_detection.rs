@@ -1,6 +1,6 @@
 use rustfft::num_complex::Complex;
 
-use crate::{apply_window, fft::Fft, float::Float};
+use crate::{apply_window, fft::Fft, Float};
 
 pub fn pitch_detect<T: Float>(
     fft: &Fft<T>,

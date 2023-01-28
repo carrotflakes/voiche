@@ -1,8 +1,6 @@
 use std::iter::Sum;
 
-use rustfft::num_traits;
-
-use crate::float::Float;
+use crate::Float;
 
 pub fn transform<T: Float + Sum>(
     window_size: usize,
@@ -26,7 +24,7 @@ pub fn transform<T: Float + Sum>(
     output
 }
 
-pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<T>> {
+pub struct Transformer<T: Float, F: FnMut(&[T]) -> Vec<T>> {
     window_size: usize,
     input_overlap_size: usize,
     input_buffer: Vec<T>,
@@ -34,7 +32,7 @@ pub struct Transformer<T: num_traits::Float + Copy + Sum, F: FnMut(&[T]) -> Vec<
     process_fn: F,
 }
 
-impl<T: Float + Sum, F: FnMut(&[T]) -> Vec<T>> Transformer<T, F> {
+impl<T: Float, F: FnMut(&[T]) -> Vec<T>> Transformer<T, F> {
     pub fn new(window_size: usize, slide_size: usize, process_fn: F) -> Self {
         let input_overlap_size = window_size - slide_size;
         Transformer {
@@ -103,55 +101,3 @@ pub fn buffer_overlapping_write<T: Float>(least_size: usize, buffer: &mut Vec<T>
     }
     buffer.extend(iter);
 }
-
-// #[test]
-// fn test() {
-//     let mut transform = Transformer::new(vec![1.0; 5], 3, |_| {});
-//     let mut output = vec![0.0; 8];
-//     let mut all_output = vec![];
-
-//     transform.input_slice(&[0.1; 5]);
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-//     transform.process();
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-
-//     transform.input_slice(&[0.2; 3]);
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-//     transform.process();
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-
-//     transform.input_slice(&[0.4; 4]);
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-//     transform.process();
-//     assert_eq!(transform.output_slice_exact(&mut output), true);
-//     all_output.extend_from_slice(&output);
-
-//     dbg!(&all_output);
-//     dbg!(transform.input_buffer.len());
-//     dbg!(transform.output_buffer.len());
-//     transform.input_slice(&[0.8; 10]);
-//     assert_eq!(transform.output_slice_exact(&mut output), false);
-//     transform.process();
-//     assert_eq!(transform.output_slice_exact(&mut output), true);
-//     all_output.extend_from_slice(&output);
-
-//     dbg!(&all_output);
-// }
-
-// #[test]
-// fn test2() {
-//     let mut transform = Transformer::new(vec![1.0; 8], 4, |_| {});
-//     let input: Vec<_> = (0..123).map(|x| (x as f32) % 16.0).collect();
-//     let mut all_output = vec![];
-
-//     transform.input_slice(&input);
-//     transform.process();
-//     let mut output = vec![0.0; 7];
-//     while transform.output_slice_exact(&mut output) {
-//         all_output.extend_from_slice(&output);
-//     }
-//     transform.finish(&mut all_output);
-
-//     assert_eq!(all_output.len(), input.len());
-//     dbg!(&all_output);
-// }

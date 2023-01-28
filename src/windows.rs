@@ -1,13 +1,10 @@
-use rustfft::num_traits;
+use crate::num_traits::{Float, FloatConst};
 
-pub fn rectangular_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
+pub fn rectangular_window<T: Float + FloatConst>(size: usize) -> Vec<T> {
     vec![T::one(); size]
 }
 
-pub fn trapezoid_window<T: num_traits::Float + num_traits::FloatConst>(
-    size: usize,
-    sleeve: usize,
-) -> Vec<T> {
+pub fn trapezoid_window<T: Float + FloatConst>(size: usize, sleeve: usize) -> Vec<T> {
     let sleeve_f = T::from(sleeve + 1).unwrap();
     let size_f = T::from(size).unwrap();
     (0..size)
@@ -20,7 +17,7 @@ pub fn trapezoid_window<T: num_traits::Float + num_traits::FloatConst>(
         .collect()
 }
 
-pub fn hann_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
+pub fn hann_window<T: Float + FloatConst>(size: usize) -> Vec<T> {
     (0..size)
         .map(|i| {
             T::from(0.5).unwrap()
@@ -29,7 +26,7 @@ pub fn hann_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -
         .collect()
 }
 
-pub fn hamming_window<T: num_traits::Float + num_traits::FloatConst>(size: usize) -> Vec<T> {
+pub fn hamming_window<T: Float + FloatConst>(size: usize) -> Vec<T> {
     let a = T::from(25.0 / 46.0).unwrap();
     (0..size)
         .map(|i| {
@@ -38,10 +35,7 @@ pub fn hamming_window<T: num_traits::Float + num_traits::FloatConst>(size: usize
         .collect()
 }
 
-pub fn blackman_window<T: num_traits::Float + num_traits::FloatConst>(
-    alpha: T,
-    size: usize,
-) -> Vec<T> {
+pub fn blackman_window<T: Float + FloatConst>(alpha: T, size: usize) -> Vec<T> {
     let a0 = (T::one() - alpha) / T::from(2).unwrap();
     let a1 = T::one() / T::from(2).unwrap();
     let a2 = alpha / T::from(2).unwrap();
@@ -53,9 +47,7 @@ pub fn blackman_window<T: num_traits::Float + num_traits::FloatConst>(
         .collect()
 }
 
-pub fn blackman_window_default<T: num_traits::Float + num_traits::FloatConst>(
-    size: usize,
-) -> Vec<T> {
+pub fn blackman_window_default<T: Float + FloatConst>(size: usize) -> Vec<T> {
     blackman_window(T::from(0.16).unwrap(), size)
 }
 

@@ -1,9 +1,10 @@
 use crate::{
     fft::{fill_right_part_of_spectrum, fix_scale, Fft},
-    float::Float,
+    num_complex::Complex,
+    num_traits::Zero,
     pitch_shift::remove_aliasing,
+    Float,
 };
-use rustfft::{num_complex::Complex, num_traits::Zero};
 
 pub fn process_spectrum<T: Float>(
     slide_size: usize,

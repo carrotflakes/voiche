@@ -8,7 +8,8 @@ pub mod transform;
 pub mod voice_change;
 pub mod windows;
 
-pub use rustfft;
+pub use float::Float;
+pub use rustfft::{self, num_complex, num_traits};
 
 pub fn apply_window<'a, T: rustfft::num_traits::Float>(
     window: &'a [T],

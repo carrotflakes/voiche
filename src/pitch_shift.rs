@@ -5,7 +5,7 @@ use rustfft::{
     num_traits::{Num, One, Zero},
 };
 
-use crate::{fft::fill_right_part_of_spectrum, float::Float};
+use crate::{fft::fill_right_part_of_spectrum, Float};
 
 pub fn process_spectrum<T: Float>(
     slide_size: usize,
