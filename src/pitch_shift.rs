@@ -13,7 +13,7 @@ pub fn process_spectrum<T: Float>(
     pitch: T,
     spectrum: &mut [Complex<T>],
 ) {
-    let pitch_change_amount = T::from_i32(2).unwrap().powf(pitch);
+    let pitch_change_amount = pitch.exp2();
 
     let mut shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
 

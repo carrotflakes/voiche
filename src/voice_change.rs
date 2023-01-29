@@ -17,8 +17,8 @@ pub fn process_spectrum<T: Float>(
 ) {
     assert!(0 < envelope_order && envelope_order < spectrum.len() / 2);
 
-    let formant_expand_amount = T::from(2).unwrap().powf(formant);
-    let pitch_change_amount = T::from(2).unwrap().powf(pitch);
+    let formant_expand_amount = formant.exp2();
+    let pitch_change_amount = pitch.exp2();
     let len = spectrum.len();
 
     // formant shift
