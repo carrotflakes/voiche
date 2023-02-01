@@ -34,8 +34,8 @@
         gainNode.gain.value = 1.0
 
         document.getElementById('volume').onchange = (ev) => {gainNode.gain.value = 2 ** ev.target.valueAsNumber}
-        document.getElementById('pitch').onchange = (ev) => {voicheNode.port.postMessage({type: "setPitch", pitch: ev.target.valueAsNumber})}
-        document.getElementById('formant').onchange = (ev) => {voicheNode.port.postMessage({type: "setFormant", formant: ev.target.valueAsNumber})}
+        document.getElementById('pitch').onchange = (ev) => {voicheNode.port.postMessage({type: "setPitch", pitch: 2 ** ev.target.valueAsNumber})}
+        document.getElementById('formant').onchange = (ev) => {voicheNode.port.postMessage({type: "setFormant", formant: 2 ** ev.target.valueAsNumber})}
 
         mss.connect(voicheNode)
         voicheNode.connect(gainNode)

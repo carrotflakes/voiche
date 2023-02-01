@@ -17,7 +17,7 @@ impl Processor {
         let slide_size = window_size / 4;
         let pre_window = windows::hann_window(window_size);
         let post_window = windows::trapezoid_window(window_size, slide_size);
-        let params = Arc::new(Mutex::new((window_size / 8, 0.0, 0.0)));
+        let params = Arc::new(Mutex::new((window_size / 8, 1.0, 1.0)));
 
         let process = {
             let fft = Fft::new(window_size);

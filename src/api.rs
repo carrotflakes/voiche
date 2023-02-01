@@ -108,7 +108,7 @@ pub fn pitch_correct<T: Float + Sum, F: FnMut(T) -> T>(
                     let freq = sample_rate / wavelength;
                     pitch_fn(freq)
                 } else {
-                    T::zero()
+                    T::one()
                 };
                 pitch_shift::process_spectrum(slide_size, &mut pitch_shift, pitch, spectrum);
             },

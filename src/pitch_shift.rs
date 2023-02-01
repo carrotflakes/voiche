@@ -13,11 +13,9 @@ pub fn process_spectrum<T: Float>(
     pitch: T,
     spectrum: &mut [Complex<T>],
 ) {
-    let pitch_change_amount = pitch.exp2();
+    let mut shifted_spectrum = pitch_shift(spectrum, pitch, slide_size);
 
-    let mut shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
-
-    remove_aliasing(pitch_change_amount, &mut shifted_spectrum);
+    remove_aliasing(pitch, &mut shifted_spectrum);
 
     spectrum.copy_from_slice(&shifted_spectrum);
 }
@@ -28,7 +26,7 @@ pub fn pitch_shifter<T: Float>(
     let mut prev_input_phases = vec![T::zero(); len];
     let mut prev_output_phases = vec![T::zero(); len];
 
-    move |spectrum, pitch_change_amount, slide_size| {
+    move |spectrum, pitch, slide_size| {
         let len = spectrum.len();
 
         let mut pre = vec![[T::zero(); 2]; len / 2 + 1];
@@ -48,17 +46,11 @@ pub fn pitch_shifter<T: Float>(
 
         let mut post = vec![[T::zero(); 2]; len / 2 + 1];
         for i in 0..len / 2 + 1 {
-            let shifted_bin = (T::from(i).unwrap() / pitch_change_amount)
-                .round()
-                .to_usize()
-                .unwrap();
+            let shifted_bin = (T::from(i).unwrap() / pitch).round().to_usize().unwrap();
             if shifted_bin > len / 2 {
                 break;
             }
-            post[i] = [
-                pre[shifted_bin][0],
-                pre[shifted_bin][1] * pitch_change_amount,
-            ];
+            post[i] = [pre[shifted_bin][0], pre[shifted_bin][1] * pitch];
         }
 
         let mut shifted_spectrum = spectrum.to_vec();
@@ -88,14 +80,11 @@ pub fn wrap_phase<T: Float>(phase: T) -> T {
     }
 }
 
-pub fn remove_aliasing<T: Num + Zero + One + Copy, S: Float>(
-    pitch_change_amount: S,
-    buffer: &mut [T],
-) {
+pub fn remove_aliasing<T: Num + Zero + One + Copy, S: Float>(pitch: S, buffer: &mut [T]) {
     let len = buffer.len();
 
-    if pitch_change_amount < S::one() {
-        let nyquist = (S::from(len as f64 / 2.0).unwrap() * pitch_change_amount)
+    if pitch < S::one() {
+        let nyquist = (S::from(len as f64 / 2.0).unwrap() * pitch)
             .round()
             .to_usize()
             .unwrap();

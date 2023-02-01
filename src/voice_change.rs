@@ -17,18 +17,16 @@ pub fn process_spectrum<T: Float>(
 ) {
     assert!(0 < envelope_order && envelope_order < spectrum.len() / 2);
 
-    let formant_expand_amount = formant.exp2();
-    let pitch_change_amount = pitch.exp2();
     let len = spectrum.len();
 
     // formant shift
     let envelope = lift_spectrum(&fft, spectrum, |b| {
         b[envelope_order..len - envelope_order + 1].fill(Complex::zero());
     });
-    let shifted_envelope = formant_shift(&envelope, formant_expand_amount);
+    let shifted_envelope = formant_shift(&envelope, formant);
 
     // pitch shift
-    let shifted_spectrum = pitch_shift(spectrum, pitch_change_amount, slide_size);
+    let shifted_spectrum = pitch_shift(spectrum, pitch, slide_size);
 
     // extract fine structure
     let mut fine_structure = lift_spectrum(&fft, &shifted_spectrum, |b| {
@@ -36,7 +34,7 @@ pub fn process_spectrum<T: Float>(
         b[len - envelope_order + 1..].fill(Complex::zero());
     });
 
-    remove_aliasing(pitch_change_amount, &mut fine_structure);
+    remove_aliasing(pitch, &mut fine_structure);
 
     for i in 0..=len / 2 {
         let amp = (shifted_envelope[i] + fine_structure[i]).exp();
@@ -47,13 +45,13 @@ pub fn process_spectrum<T: Float>(
     fill_right_part_of_spectrum(spectrum);
 }
 
-pub fn formant_shift<T: Float>(envelope: &[T], formant_expand_amount: T) -> Vec<T> {
+pub fn formant_shift<T: Float>(envelope: &[T], formant: T) -> Vec<T> {
     let len = envelope.len();
     let negative = T::from(-1000.0).unwrap();
 
     let mut new_envelope = vec![T::zero(); len];
     for i in 0..len / 2 + 1 {
-        let j_f32 = T::from(i).unwrap() / formant_expand_amount;
+        let j_f32 = T::from(i).unwrap() / formant;
         let j = j_f32.floor().to_usize().unwrap();
         let l = if j <= len / 2 { envelope[j] } else { negative };
         let r = if j + 1 <= len / 2 {

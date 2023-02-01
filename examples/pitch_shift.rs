@@ -5,7 +5,7 @@ use voiche::{api, transform, windows};
 fn main() {
     let window_size = 1024;
     let slide_size = window_size / 4;
-    let pitch = -0.4;
+    let pitch = (-0.4f32).exp2();
 
     wav::wav_file_convert("ps", |_sample_rate, channels| {
         channels

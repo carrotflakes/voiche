@@ -27,7 +27,7 @@ fn main() {
                         windows::hann_window(window_size),
                         windows::trapezoid_window(window_size, window_size - slide_size),
                         slide_size,
-                        time_rate.log2(),
+                        time_rate,
                     ))
                     .overlapping_flatten(window_size - slide_size)
                     .collect::<Vec<_>>()
