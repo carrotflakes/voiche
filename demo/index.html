@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <title>voiche demo</title>
+  </head>
+  <body>
+    <button id="start">start</button>
+    <div>
+      <input type="range" id="volume" min="-5" max="2" step="0.1" value="0"><label for="volume">volume</label>
+    </div>
+    <div>
+      <input type="range" id="pitch" min="-2" max="2" step="0.1" value="0"><label for="pitch">pitch</label>
+    </div>
+    <div>
+      <input type="range" id="formant" min="-2" max="2" step="0.1" value="0"><label for="formant">formant</label>
+    </div>
+
+    <script type="module">
+      document.getElementById('start').onclick = async function start() {
+        const audioContext = new AudioContext();
+        await audioContext.audioWorklet.addModule('./processor.js');
+        const wasmData = await(await window.fetch("./pkg/demo_bg.wasm")).arrayBuffer()
+        const voicheNode = new AudioWorkletNode(audioContext, "voiche", {
+          outputChannelCount: [1],
+          processorOptions: {wasmData}
+        });
+
+        voicheNode.port.onmessage = (ev) => console.log(ev.data)
+        
+        const ms = await navigator.mediaDevices.getUserMedia({audio: true});
+        const mss = audioContext.createMediaStreamSource(ms)
+        const gainNode = audioContext.createGain()
+        gainNode.gain.value = 1.0
+
+        document.getElementById('volume').onchange = (ev) => {gainNode.gain.value = 2 ** ev.target.valueAsNumber}
+        document.getElementById('pitch').onchange = (ev) => {voicheNode.port.postMessage({type: "setPitch", pitch: ev.target.valueAsNumber})}
+        document.getElementById('formant').onchange = (ev) => {voicheNode.port.postMessage({type: "setFormant", formant: ev.target.valueAsNumber})}
+
+        mss.connect(voicheNode)
+        voicheNode.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        document.getElementById('start').disabled = true
+      }
+    </script>
+  </body>
+</html>
