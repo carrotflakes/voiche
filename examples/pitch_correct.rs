@@ -9,7 +9,7 @@ fn main() {
         let nn = (freq / 440.0).log2() * 12.0;
         // approximately scale
         let nn_correct = ((nn * (7.0 / 12.0)).round() / (7.0 / 12.0)).round();
-        (-(nn - nn_correct) / 12.0).exp2()
+        ((nn_correct - nn) / 12.0).exp2()
     };
     // let pitch_fn = |freq: f32| {
     //     -(freq / 220.0).log2()
