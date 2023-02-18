@@ -1,6 +1,6 @@
 # voiche
 
-Naive voice changer implementations.
+Naive voice changer implementations and others.
 
 ## Examples
 
@@ -17,6 +17,10 @@ Assuming you already have PulseAudio installed, you can run it with the followin
 ``` sh
 $ parec -r --raw --format=s16ne --channels=1 | cargo run --release --example stdinout 2> /dev/null | pacat --raw --format=s16ne --channels=1
 ```
+
+### And more
+
+See `./examples`.
 
 ## Author
 
