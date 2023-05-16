@@ -10,8 +10,8 @@ fn main() {
     let window_size = 1024;
     let slide_size = window_size / 4;
     let envelope_order = window_size / 8;
-    let formant = 0.2;
-    let pitch = 0.4;
+    let formant = (-0.2f32).exp2();
+    let pitch = (-0.4f32).exp2();
 
     let process = api::voice_change(
         windows::hann_window(window_size),
