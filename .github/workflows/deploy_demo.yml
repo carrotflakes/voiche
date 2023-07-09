@@ -6,14 +6,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Restore cache
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/wasm-pack
+          ~/.cargo/registry
+        key: ${{ runner.os }}-wasm-pack
+
     - name: Setup
+      if: steps.cache.outputs.cache-hit != 'true'
       run: rustup update
-    - uses: actions/checkout@v3
+
     - name: Install wasm-pack
+      if: steps.cache.outputs.cache-hit != 'true'
       run: cargo install wasm-pack
+
+    - name: Save cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/wasm-pack
+          ~/.cargo/registry
+        key: ${{ runner.os }}-wasm-pack
+
+    - uses: actions/checkout@v3
+
     - name: Build
       run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build && ls build
       working-directory: ./demo
+
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
