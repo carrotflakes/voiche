@@ -1,45 +1,44 @@
 name: Build and deploy website to GitHub Pages
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Restore cache
-      id: cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/wasm-pack
-          ~/.cargo/registry
-        key: ${{ runner.os }}-wasm-pack
+      - name: Setup
+        run: rustup update
 
-    - name: Setup
-      if: steps.cache.outputs.cache-hit != 'true'
-      run: rustup update
+      - name: Restore cache
+        id: cache-wasm-pack
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/wasm-pack
+            ~/.cargo/registry
+          key: ${{ runner.os }}-wasm-pack
 
-    - name: Install wasm-pack
-      if: steps.cache.outputs.cache-hit != 'true'
-      run: cargo install wasm-pack
+      - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
+        run: cargo install wasm-pack
 
-    - name: Save cache
-      if: steps.cache.outputs.cache-hit != 'true'
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/wasm-pack
-          ~/.cargo/registry
-        key: ${{ runner.os }}-wasm-pack
+      - name: Save cache
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/wasm-pack
+            ~/.cargo/registry
+          key: ${{ runner.os }}-wasm-pack
 
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Build
-      run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build && ls build
-      working-directory: ./demo
+      - name: Build
+        run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build && rm build/pkg/.gitignore && ls build
+        working-directory: ./demo
 
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: demo/build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: demo/build
