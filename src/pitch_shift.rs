@@ -44,25 +44,23 @@ pub fn pitch_shifter<T: Float>(
             pre[i] = [norm, T::from(i).unwrap() + bin_deviation];
         }
 
-        let mut post = vec![[T::zero(); 2]; len / 2 + 1];
-        for i in 0..len / 2 + 1 {
-            let shifted_bin = (T::from(i).unwrap() / pitch).round().to_usize().unwrap();
-            if shifted_bin > len / 2 {
-                break;
-            }
-            post[i] = [pre[shifted_bin][0], pre[shifted_bin][1] * pitch];
-        }
-
         let mut shifted_spectrum = spectrum.to_vec();
         for i in 0..len / 2 + 1 {
-            let bin_deviation = post[i][1] - T::from(i).unwrap();
+            let shifted_bin = (T::from(i).unwrap() / pitch).round().to_usize().unwrap();
+            let post = if shifted_bin > len / 2 {
+                [T::zero(), T::zero()]
+            } else {
+                [pre[shifted_bin][0], pre[shifted_bin][1] * pitch]
+            };
+
+            let bin_deviation = post[1] - T::from(i).unwrap();
             let mut phase_diff =
                 bin_deviation * T::from(TAU * slide_size as f64 / len as f64).unwrap();
             let bin_center_freq = T::from(TAU * i as f64 / len as f64).unwrap();
             phase_diff = phase_diff + bin_center_freq * T::from(slide_size).unwrap();
 
             let phase = wrap_phase(prev_output_phases[i] + phase_diff);
-            shifted_spectrum[i] = Complex::from_polar(post[i][0], phase);
+            shifted_spectrum[i] = Complex::from_polar(post[0], phase);
             prev_output_phases[i] = phase;
         }
 
