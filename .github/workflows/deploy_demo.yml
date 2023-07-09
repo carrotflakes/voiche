@@ -12,7 +12,7 @@ jobs:
     - name: Install wasm-pack
       run: cargo install wasm-pack
     - name: Build
-      run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build
+      run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build && ls build
       working-directory: ./demo
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
