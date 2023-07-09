@@ -1,0 +1,21 @@
+name: Build and deploy website to GitHub Pages
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup
+      run: rustup update
+    - uses: actions/checkout@v3
+    - name: Install wasm-pack
+      run: cargo install wasm-pack
+    - name: Build
+      run: wasm-pack build --target web && mkdir build && cp -r pkg index.html polyfill.js processor.js build
+      working-directory: ./demo
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: demo/build
