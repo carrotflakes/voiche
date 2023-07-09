@@ -87,6 +87,7 @@ impl MimicryProcessor {
                 }
                 if self.buf.len() > (self.sample_rate * 10.0) as usize {
                     self.mode = Mode::Speak;
+                    self.buf = (self.process)(&self.buf);
                 }
                 vec![0.0; buf.len()]
             }
@@ -111,6 +112,7 @@ fn root_mean_square(buf: &[f32]) -> f32 {
     (buf.iter().map(|&x| x * x).sum::<f32>() / buf.len() as f32).sqrt()
 }
 
+#[allow(dead_code)]
 fn count_zero_cross(buf: &[f32]) -> usize {
     let mut last = buf[0];
     let mut count = 0;
