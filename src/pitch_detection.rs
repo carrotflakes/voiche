@@ -2,6 +2,8 @@ use rustfft::num_complex::Complex;
 
 use crate::{apply_window, fft::Fft, Float};
 
+/// Detect pitch from a buffer.
+/// Returns a tuple of wavelength and gain.
 pub fn pitch_detect<T: Float>(
     fft: &Fft<T>,
     window: &[T],
@@ -11,17 +13,14 @@ pub fn pitch_detect<T: Float>(
 ) -> Option<(T, T)> {
     let buf: Vec<_> = apply_window(window, buf.iter().copied()).collect();
     let nsdf = compute_nsdf(&fft, &buf);
-    let peaks = compute_peaks(&nsdf[..nsdf.len() / 2]);
-    let peaks: Vec<_> = peaks.into_iter().filter(|p| min_wavelength < p.0).collect();
+    let mut peaks = compute_peaks(&nsdf[..nsdf.len() / 2]);
+    peaks.retain(|p| min_wavelength < p.0);
     let max_peak = peaks.iter().fold(T::zero(), |a, p| a.max(p.1));
     if peak_threshold < max_peak {
-        Some(
-            peaks
-                .iter()
-                .find(|p| max_peak * T::from(0.9).unwrap() <= p.1)
-                .unwrap()
-                .clone(),
-        )
+        peaks
+            .iter()
+            .find(|p| max_peak * T::from(0.9).unwrap() <= p.1)
+            .cloned()
     } else {
         None
     }
