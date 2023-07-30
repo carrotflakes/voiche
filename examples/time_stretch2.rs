@@ -1,6 +1,6 @@
 mod wav;
 
-use voiche::{api, overlapping_flatten::OverlappingFlattenTrait, windows};
+use voiche::{api, overlapping_flatten::OverlappingFlattenTrait, resample, windows};
 
 fn main() {
     let window_size = 1024;
@@ -25,27 +25,4 @@ fn main() {
             })
             .collect()
     });
-}
-
-pub fn resample<T: voiche::float::Float>(buf: &[T], rate: T) -> Vec<T> {
-    let mut output = vec![
-        T::zero();
-        (T::from(buf.len()).unwrap() * rate)
-            .ceil()
-            .to_usize()
-            .unwrap()
-    ];
-
-    for i in 0..output.len() {
-        let p = T::from(i).unwrap() / rate;
-        let j = p.to_usize().unwrap();
-
-        let x = buf[j];
-        let y = buf.get(j + 1).copied().unwrap_or(T::zero());
-        let z = buf.get(j + 2).copied().unwrap_or(T::zero());
-
-        output[i] = y - (x - z) * p.fract() / T::from(4.0).unwrap();
-    }
-
-    output
 }

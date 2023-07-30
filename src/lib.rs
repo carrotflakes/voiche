@@ -25,3 +25,27 @@ pub fn apply_window_with_scale<'a, T: rustfft::num_traits::Float>(
 ) -> impl Iterator<Item = T> + 'a {
     iter.zip(window.iter()).map(move |(x, &y)| x * y * scale)
 }
+
+/// Resample with quadratic interpolation.
+pub fn resample<T: float::Float>(buf: &[T], rate: T) -> Vec<T> {
+    let mut output = vec![
+        T::zero();
+        (T::from(buf.len()).unwrap() * rate)
+            .ceil()
+            .to_usize()
+            .unwrap()
+    ];
+
+    for i in 0..output.len() {
+        let p = T::from(i).unwrap() / rate;
+        let j = p.to_usize().unwrap();
+
+        let x = buf[j];
+        let y = buf.get(j + 1).copied().unwrap_or(T::zero());
+        let z = buf.get(j + 2).copied().unwrap_or(T::zero());
+
+        output[i] = y - (x - z) * p.fract() / T::from(4.0).unwrap();
+    }
+
+    output
+}
