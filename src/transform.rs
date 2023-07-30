@@ -2,6 +2,14 @@ use std::iter::Sum;
 
 use crate::Float;
 
+/// You can also use overlapping_flatten() like this:
+/// ```
+/// buf.windows(window_size)
+///     .step_by(slide_size)
+///     .map(|b| process(&b))
+///     .overlapping_flatten(window_size - slide_size)
+///     .collect::<Vec<_>>()
+/// ```
 pub fn transform<T: Float + Sum>(
     window_size: usize,
     slide_size: usize,
