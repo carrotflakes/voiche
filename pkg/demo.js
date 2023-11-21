@@ -73,14 +73,6 @@ function addHeapObject(obj) {
 */
 export class Processor {
 
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(Processor.prototype);
-        obj.__wbg_ptr = ptr;
-
-        return obj;
-    }
-
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -96,7 +88,8 @@ export class Processor {
     */
     constructor() {
         const ret = wasm.processor_new();
-        return Processor.__wrap(ret);
+        this.__wbg_ptr = ret >>> 0;
+        return this;
     }
     /**
     * @param {Float32Array} buffer
