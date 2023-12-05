@@ -107,6 +107,8 @@ pub fn buffer_overlapping_write<T: std::ops::Add<T, Output = T> + Clone>(
     buffer: &mut Vec<T>,
     mut other: impl Iterator<Item = T>,
 ) {
+    assert!(overlap_size <= buffer.len());
+
     let len = buffer.len();
     for i in len - overlap_size..len {
         let Some(x) = other.next() else {
