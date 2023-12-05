@@ -3,7 +3,7 @@ use std::iter::Sum;
 use crate::num_complex::Complex;
 
 use crate::{
-    apply_window, apply_window_with_scale,
+    apply_window,
     fft::{self, Fft},
     float::Float,
     pitch_detection,
@@ -132,5 +132,5 @@ pub fn retouch_spectrum<T: Float + Sum>(
     fft.inverse(&mut spec);
     fft::fix_scale(&mut spec);
     let output_scale = T::from(slide_size).unwrap() / post_window.iter().copied().sum::<T>();
-    apply_window_with_scale(post_window, output_scale, spec.iter().map(|x| x.re)).collect()
+    apply_window(post_window, spec.iter().map(|x| x.re * output_scale)).collect()
 }

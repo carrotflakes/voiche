@@ -2,7 +2,7 @@ mod wav;
 
 use rustfft::num_complex::Complex;
 use voiche::{
-    api, apply_window, apply_window_with_scale,
+    api, apply_window,
     fft::{fix_scale, Fft},
     overlapping_flatten, transform,
     windows::hann_window,
@@ -106,7 +106,7 @@ fn reconstruct(
         overlapping_flatten::buffer_overlapping_write(
             overlap_size,
             &mut output,
-            apply_window_with_scale(window, output_scale, spec.iter().map(|x| x.re)),
+            apply_window(window, spec.iter().map(|x| x.re * output_scale)),
         );
     }
     output
