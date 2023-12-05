@@ -2,6 +2,8 @@ use std::iter::Sum;
 
 use crate::Float;
 
+/// Convert a buffer to another buffer by applying a function to each window.
+///
 /// You can also use overlapping_flatten() like this:
 /// ```
 /// buf.windows(window_size)
@@ -14,17 +16,17 @@ pub fn transform<T: Float + Sum>(
     window_size: usize,
     slide_size: usize,
     mut process: impl FnMut(&[T]) -> Vec<T>,
-    buf: &[T],
+    buffer: &[T],
 ) -> Vec<T> {
-    if buf.is_empty() {
+    if buffer.is_empty() {
         return vec![];
     }
 
-    let mut output = Vec::with_capacity(buf.len());
+    let mut output = Vec::with_capacity(buffer.len());
 
-    for i in 0..(buf.len() - 1) / slide_size + 1 {
+    for i in 0..(buffer.len() - 1) / slide_size + 1 {
         let i = i * slide_size;
-        let mut buf = buf[i..(i + window_size).min(buf.len())].to_vec();
+        let mut buf = buffer[i..(i + window_size).min(buffer.len())].to_vec();
         buf.resize(window_size, T::zero());
         buf = process(&buf);
         buffer_overlapping_write(slide_size, &mut output, &buf);
@@ -32,6 +34,26 @@ pub fn transform<T: Float + Sum>(
     output
 }
 
+/// A structure for real-time signal transformation.
+///
+/// # Example
+/// ```
+/// let mut transformer = Transformer::new(1024, 256, |buf| buf.to_vec());
+///
+/// loop {
+///     // read input
+///     let input = vec![0.0; 256];
+///
+///     transformer.input_slice(&input);
+///     transformer.process();
+///
+///     let mut output = vec![0.0; 256];
+///     while transformer.output_slice_exact(&mut output) {
+///        // write output
+///        todo!();
+///    }
+/// }
+/// ```
 pub struct Transformer<T: Float, F: FnMut(&[T]) -> Vec<T>> {
     window_size: usize,
     input_overlap_size: usize,
