@@ -4,13 +4,21 @@ use hound::{SampleFormat, WavSpec};
 
 pub fn wav_file_convert(
     filename_suffix: &str,
-    mut process: impl FnMut(u32, Vec<Vec<f32>>) -> Vec<Vec<f32>>,
+    process: impl FnMut(u32, Vec<Vec<f32>>) -> Vec<Vec<f32>>,
 ) {
     let file = std::env::args()
         .skip(1)
         .next()
         .unwrap_or("epic.wav".to_string());
 
+    wav_file_convert_impl(&file, filename_suffix, process);
+}
+
+pub fn wav_file_convert_impl(
+    file: &str,
+    filename_suffix: &str,
+    mut process: impl FnMut(u32, Vec<Vec<f32>>) -> Vec<Vec<f32>>,
+) {
     let (mut spec, bufs) = load(&file);
     dbg!(power(&bufs[0]));
 
