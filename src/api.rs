@@ -131,6 +131,8 @@ pub fn retouch_spectrum<T: Float + Sum>(
     process(&mut spec);
     fft.inverse(&mut spec);
     fft::fix_scale(&mut spec);
-    let output_scale = T::from(slide_size).unwrap() / post_window.iter().copied().sum::<T>();
+    let output_scale = T::from(buf.len() * slide_size).unwrap()
+        / pre_window.iter().copied().sum::<T>()
+        / post_window.iter().copied().sum::<T>();
     apply_window(post_window, spec.iter().map(|x| x.re * output_scale)).collect()
 }
