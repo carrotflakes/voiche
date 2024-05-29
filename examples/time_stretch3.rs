@@ -1,4 +1,4 @@
-/// Time stretch by zero-crossing
+/// Time stretching by repeating or deleting between zero-crossing points.
 mod wav;
 
 fn main() {

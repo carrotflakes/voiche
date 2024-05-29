@@ -1,3 +1,4 @@
+/// Time stretch through simple windowing.
 mod wav;
 
 use voiche::{apply_window, overlapping_flatten::OverlappingFlattenTrait, windows};

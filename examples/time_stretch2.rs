@@ -1,3 +1,4 @@
+/// Time stretch through resampling and pitch shifting.
 mod wav;
 
 use voiche::{api, overlapping_flatten::OverlappingFlattenTrait, resample, windows};
