@@ -69,6 +69,10 @@ function addHeapObject(obj) {
     heap[idx] = obj;
     return idx;
 }
+
+const ProcessorFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_processor_free(ptr >>> 0));
 /**
 */
 export class Processor {
@@ -76,7 +80,7 @@ export class Processor {
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
-
+        ProcessorFinalization.unregister(this);
         return ptr;
     }
 
